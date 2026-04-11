@@ -19,10 +19,10 @@ void mecanum_inverse(float vx, float vy, float omega,
     float v_rr = vx - vy + k * omega;
 
     float to_rpm = 60.0f / (2.0f * 3.14159265f * cfg->wheel_radius);
-    float max = cfg->max_rpm;
+    float max_rpm = cfg->max_rpm;
 
-    out->fl = clamp(v_fl * to_rpm, -max, max);
-    out->fr = clamp(v_fr * to_rpm, -max, max);
-    out->rl = clamp(v_rl * to_rpm, -max, max);
-    out->rr = clamp(v_rr * to_rpm, -max, max);
+    out->fl = clamp(v_fl * to_rpm, -max_rpm, max_rpm);
+    out->fr = clamp(v_fr * to_rpm, -max_rpm, max_rpm);
+    out->rl = clamp(v_rl * to_rpm, -max_rpm, max_rpm);
+    out->rr = clamp(v_rr * to_rpm, -max_rpm, max_rpm);
 }

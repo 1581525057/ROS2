@@ -42,6 +42,8 @@ static void test_clamp(void) {
 
     assert(fabs(ws.fl) <= cfg.max_rpm + 1e-3f);
     assert(fabs(ws.fr) <= cfg.max_rpm + 1e-3f);
+    assert(fabs(ws.rl) <= cfg.max_rpm + 1e-3f);
+    assert(fabs(ws.rr) <= cfg.max_rpm + 1e-3f);
     printf("[PASS] test_clamp\n");
 }
 

@@ -63,10 +63,12 @@ void HAL_UART_RxCpltCallback(void *huart) {
 
         NavFrame frame;
         if (protocol_parse_nav(g_rx_buf, &frame)) {
-            nav_set_target(&g_nav,
-                           frame.target_x,
-                           frame.target_y,
-                           frame.target_yaw);
+            if (g_nav.state == NAV_IDLE) {
+                nav_set_target(&g_nav,
+                               frame.target_x,
+                               frame.target_y,
+                               frame.target_yaw);
+            }
             g_cur_x = frame.current_x;
             g_cur_y = frame.current_y;
             g_cur_yaw = frame.current_yaw;
@@ -77,7 +79,10 @@ void HAL_UART_RxCpltCallback(void *huart) {
         }
     }
 
+    /* USER CODE BEGIN UART RX Restart */
+    /* USER: uncomment with actual HAL handle */
     /* HAL_UART_Receive_IT(&huart1, &g_rx_byte, 1); */
+    /* USER CODE END UART RX Restart */
 }
 
 int main(void) {
@@ -98,7 +103,12 @@ int main(void) {
     nav_init(&g_nav, &mcfg);
 
     /* protocol_send(&huart1, "$READY\r\n"); */
+
+    /* USER CODE BEGIN UART RX Start */
+    /* USER: uncomment with actual HAL handle */
     /* HAL_UART_Receive_IT(&huart1, &g_rx_byte, 1); */
+    /* USER CODE END UART RX Start */
+
     /* HAL_TIM_Base_Start_IT(&htim2); */
 
     while (1) {
@@ -114,7 +124,11 @@ int main(void) {
             set_motor_rpm(&g_wheels);
 
             if (s == NAV_DONE) {
+                /* USER CODE BEGIN Done Response */
+                /* USER: uncomment with actual HAL handle */
                 /* protocol_send(&huart1, "$DONE\r\n"); */
+                /* USER CODE END Done Response */
+                nav_reset(&g_nav, &g_wheels);
             }
         }
     }
