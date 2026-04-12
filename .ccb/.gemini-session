@@ -1,0 +1,16 @@
+{
+  "session_id": "ai-1775877047-6007",
+  "ccb_project_id": "38bee5e1ebc29e859759d1099484c447b40664369c1a009a1da59ec06e66296a",
+  "runtime_dir": "/tmp/claude-ai-li/ai-1775877047-6007/gemini",
+  "terminal": "wezterm",
+  "tmux_session": null,
+  "pane_id": "2",
+  "pane_title_marker": "CCB-Gemini-38bee5e1",
+  "work_dir": "/home/li/ROS2_Repository",
+  "work_dir_norm": "/home/li/ROS2_Repository",
+  "start_dir": "/home/li/ROS2_Repository",
+  "active": false,
+  "started_at": "2026-04-11 11:10:55",
+  "start_cmd": "gemini; code=$?; echo; echo \"[gemini] exited with code $code. Press Enter to close...\"; read -r _; exit $code",
+  "ended_at": "2026-04-11 11:29:03"
+}
