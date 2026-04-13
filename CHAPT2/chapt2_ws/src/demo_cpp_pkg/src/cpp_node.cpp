@@ -8,4 +8,5 @@ int main(int argc, char **argv)
     RCLCPP_INFO(node->get_logger(), "C++节点");
     rclcpp::spin(node);
     return 0;
-}
+} 
+
