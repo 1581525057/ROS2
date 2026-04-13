@@ -27,6 +27,9 @@ if(BUILD_TESTING)
   # comment the line when this package is in a git repo and when
   # a copyright and license is added to all source files
   set(ament_cmake_cpplint_FOUND TRUE)
+  # Skip xmllint because offline environments cannot always fetch the ROS
+  # package schema referenced by package.xml.
+  set(ament_cmake_xmllint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
 install(TARGETS turtle_circle turtle_circle_yezi

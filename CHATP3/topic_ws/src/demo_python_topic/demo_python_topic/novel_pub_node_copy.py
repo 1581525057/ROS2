@@ -1,13 +1,5 @@
-import rclpy
-from rclpy.node import Node
-import requests
-from example_interfaces.msg import String
-from queue import Queue
+"""Compatibility entry point for earlier publisher experiments."""
 
+from demo_python_topic.novel_pub_node import NovelPubNode, main
 
-class NovelPubNode(Node):
-    def __init__(self, node_name):
-        super.__init__(node_name)
-
-        self.get_logger().info
-
+__all__ = ["NovelPubNode", "main"]

@@ -1,10 +1,11 @@
 from queue import Queue
-import espeakng
 import rclpy
 from example_interfaces.msg import String
+from demo_python_topic._espeakng import Speaker
 from rclpy.node import Node
 from threading import Thread
 import time
+
 
 class NovelSubNode(Node):
     def __init__(self, node_name):
@@ -19,7 +20,9 @@ class NovelSubNode(Node):
 
         # 订阅 novel 话题。
         # 只要有新消息到达，就会自动调用 self.novel_callback。
-        self.novel_sub_ = self.create_subscription(String,'novel',self.novel_callback,10)
+        self.novel_sub_ = self.create_subscription(
+            String, 'novel', self.novel_callback, 10
+        )
 
         # 创建一条后台线程，入口函数是 self.speak_thread。
         # 这条线程的职责不是接收 ROS 消息，而是专门负责“慢慢朗读”。
@@ -35,24 +38,25 @@ class NovelSubNode(Node):
 
         # 启动后台朗读线程。
         # start() 之后，self.speak_thread() 会在另一条线程里一直运行。
-        self,self.speech_thread_.start()
+        self.speech_thread_.daemon = True
+        self.speech_thread_.start()
 
-    def novel_callback(self,msg):
+    def novel_callback(self, msg):
         # 收到一条小说消息后，不在这里直接朗读，
         # 只把消息放进队列，然后立刻返回。
         # 这样订阅回调就不会被“朗读很慢”这件事卡住。
-        self.novel_queue_ .put(msg)
+        self.novel_queue_.put(msg.data)
 
     def speak_thread(self):
         # 真正负责朗读的函数。
         # 注意：这个函数不是由 ROS 回调直接调用的，
         # 而是由上面的 speech_thread_ 在线程里后台执行。
-        speaker = espeakng.Speaker()
+        speaker = Speaker()
         speaker.voice = 'zh'
 
         # 只要 ROS 还在运行，这条线程就一直循环检查队列。
         while rclpy.ok():
-            if self.novel_queue_.qsize()>0:
+            if self.novel_queue_.qsize() > 0:
                 # 队列里有消息时，取出一条并朗读。
                 # 这里和 novel_callback() 形成“生产者-消费者”关系：
                 # 1. novel_callback() 负责往队列里放
@@ -71,5 +75,3 @@ def main():
     node = NovelSubNode('novel_sub')
     rclpy.spin(node)
     rclpy.shutdown()
-
- 
