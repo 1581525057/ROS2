@@ -12,11 +12,14 @@ find_package(geometry_msgs REQUIRED)
 find_package(turtlesim REQUIRED)
 
 add_executable(turtle_circle src/turtle_circle.cpp)
-add_executable(turtle_circle_yezi src/tutrtle_circle_yezi.cpp)
+add_executable(turtle_circle_yezi src/turtle_circle_yezi.cpp)
+add_executable(turtle_control src/turtle_control.cpp)
+add_executable(turtle_control_yezi src/turtle_control_yezi.cpp)
 
 ament_target_dependencies(turtle_circle rclcpp geometry_msgs)
 ament_target_dependencies(turtle_circle_yezi  rclcpp geometry_msgs)
-
+ament_target_dependencies(turtle_control  rclcpp geometry_msgs turtlesim)
+ament_target_dependencies(turtle_control_yezi  rclcpp geometry_msgs turtlesim)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -32,7 +35,7 @@ if(BUILD_TESTING)
   set(ament_cmake_xmllint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
-install(TARGETS turtle_circle turtle_circle_yezi
+install(TARGETS turtle_circle turtle_circle_yezi turtle_control turtle_control_yezi
 DESTINATION lib/${PROJECT_NAME})
 
 ament_package()
