@@ -1,0 +1,9 @@
+float64 target_distance
+float64 speed
+---
+float64 final_distance
+bool success
+string message
+---
+float64 current_distance
+float64 progress_percent

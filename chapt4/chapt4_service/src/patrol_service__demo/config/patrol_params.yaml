@@ -1,0 +1,5 @@
+remote_param:
+  ros__parameters:
+    # 此示例目前由 remote_param.py 写死为“叶子无敌”和 true；
+    # 保留 YAML 文件是为了演示 launch 如何加载参数文件。
+    use_sim_time: false

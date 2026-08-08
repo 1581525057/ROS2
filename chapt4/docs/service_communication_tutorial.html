@@ -1,0 +1,1725 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="基于 chapt4_ws 真实源码编写的 ROS 2 Humble 服务通信中文教程">
+  <title>ROS 2 巡逻服务 · 从工作空间到一次完整调用</title>
+  <!--
+    与项目自动化检查保持一致的纯文本代码索引：
+    from rcl_interfaces.srv import SetParameters
+    self.client = self.create_client(SetParameters, '/patrol_server/set_parameters')
+    Parameter('robot_name', Parameter.Type.STRING, 'robot_02')
+    Parameter('allow', Parameter.Type.BOOL, False)
+    rclpy.spin_until_future_complete(self, future)
+  -->
+  <style>
+    :root {
+      --paper: #f4f1e9;
+      --paper-2: #ebe5d8;
+      --ink: #17231f;
+      --muted: #5d6a64;
+      --forest: #164b3b;
+      --forest-2: #0d362a;
+      --mint: #b9dfce;
+      --orange: #e76f45;
+      --yellow: #efc95c;
+      --blue: #3c6e8f;
+      --red: #a23f3f;
+      --white: #fffdf8;
+      --line: rgba(23, 35, 31, .16);
+      --shadow: 0 18px 55px rgba(22, 48, 39, .12);
+      --radius: 18px;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 88% 3%, rgba(239, 201, 92, .2), transparent 25rem),
+        linear-gradient(90deg, rgba(22, 75, 59, .035) 1px, transparent 1px),
+        linear-gradient(rgba(22, 75, 59, .035) 1px, transparent 1px),
+        var(--paper);
+      background-size: auto, 32px 32px, 32px 32px, auto;
+      font: 16px/1.75 var(--sans);
+    }
+
+    a { color: inherit; }
+    button, select { font: inherit; }
+    code, pre { font-family: var(--mono); }
+    ::selection { color: var(--forest-2); background: var(--mint); }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 284px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .side {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+      color: #f8f3e7;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.05), transparent 18rem),
+        var(--forest-2);
+      border-right: 1px solid rgba(255,255,255,.12);
+      padding: 30px 20px 22px;
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 46px;
+      height: 46px;
+      border: 1px solid rgba(255,255,255,.32);
+      border-radius: 50%;
+      color: var(--forest-2);
+      background: var(--yellow);
+      font-weight: 900;
+      letter-spacing: -.08em;
+      box-shadow: 0 8px 24px rgba(0,0,0,.16);
+    }
+
+    .brand h2 {
+      margin: 14px 0 4px;
+      font-size: 19px;
+      line-height: 1.3;
+      letter-spacing: -.02em;
+    }
+
+    .brand p {
+      margin: 0;
+      color: rgba(255,255,255,.64);
+      font-size: 12px;
+    }
+
+    .progress-wrap {
+      margin: 22px 0 17px;
+      color: rgba(255,255,255,.72);
+      font-size: 11px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .progress {
+      height: 4px;
+      margin-top: 8px;
+      overflow: hidden;
+      background: rgba(255,255,255,.13);
+      border-radius: 10px;
+    }
+
+    .progress > i {
+      display: block;
+      width: 0;
+      height: 100%;
+      background: var(--yellow);
+      transition: width .12s linear;
+    }
+
+    .nav {
+      display: grid;
+      gap: 2px;
+      padding: 0;
+      margin: 0;
+      list-style: none;
+    }
+
+    .nav a {
+      display: grid;
+      grid-template-columns: 30px 1fr;
+      align-items: center;
+      min-height: 38px;
+      padding: 6px 8px;
+      border-radius: 10px;
+      color: rgba(255,255,255,.68);
+      font-size: 13px;
+      text-decoration: none;
+      transition: .18s ease;
+    }
+
+    .nav a span {
+      color: rgba(255,255,255,.34);
+      font-family: var(--mono);
+      font-size: 10px;
+    }
+
+    .nav a:hover, .nav a.active {
+      color: #fff;
+      background: rgba(255,255,255,.095);
+      transform: translateX(2px);
+    }
+
+    .nav a.active span { color: var(--yellow); }
+
+    .side-note {
+      margin-top: 20px;
+      padding: 13px;
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 12px;
+      color: rgba(255,255,255,.62);
+      font-size: 11px;
+    }
+
+    main { min-width: 0; }
+    .mobile-nav {
+      display: none;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      padding: 10px 14px;
+      background: rgba(244, 241, 233, .93);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(12px);
+    }
+
+    .mobile-nav select {
+      width: 100%;
+      color: var(--ink);
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 9px 11px;
+    }
+
+    .content {
+      width: min(1160px, calc(100% - 64px));
+      margin: 0 auto;
+      padding: 42px 0 90px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      min-height: 560px;
+      padding: clamp(34px, 6vw, 78px);
+      color: #fffdf5;
+      background: var(--forest);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      width: 420px;
+      height: 420px;
+      right: -110px;
+      top: -160px;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 50%;
+      box-shadow: 0 0 0 55px rgba(255,255,255,.035), 0 0 0 110px rgba(255,255,255,.025);
+    }
+
+    .hero::after {
+      content: "{ srv }";
+      position: absolute;
+      right: 6%;
+      bottom: -32px;
+      color: rgba(255,255,255,.05);
+      font: 900 clamp(90px, 15vw, 200px)/1 var(--mono);
+      letter-spacing: -.12em;
+    }
+
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 28px;
+      color: var(--yellow);
+      font: 700 12px/1.2 var(--mono);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .kicker::before {
+      content: "";
+      width: 28px;
+      height: 2px;
+      background: currentColor;
+    }
+
+    h1 {
+      position: relative;
+      z-index: 1;
+      max-width: 820px;
+      margin: 0;
+      font-size: clamp(42px, 7vw, 86px);
+      line-height: .98;
+      letter-spacing: -.065em;
+    }
+
+    .hero-lead {
+      position: relative;
+      z-index: 1;
+      max-width: 710px;
+      margin: 28px 0 0;
+      color: rgba(255,255,255,.74);
+      font-size: clamp(16px, 2vw, 20px);
+      line-height: 1.75;
+    }
+
+    .hero-meta {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 34px;
+    }
+
+    .pill {
+      padding: 8px 13px;
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: 999px;
+      color: rgba(255,255,255,.84);
+      background: rgba(255,255,255,.06);
+      font: 12px/1.2 var(--mono);
+    }
+
+    .hero-path {
+      position: absolute;
+      z-index: 1;
+      left: clamp(34px, 6vw, 78px);
+      bottom: 28px;
+      color: rgba(255,255,255,.42);
+      font: 11px/1.5 var(--mono);
+    }
+
+    section {
+      padding: 78px 0 18px;
+      scroll-margin-top: 10px;
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: 86px minmax(0, 1fr);
+      gap: 20px;
+      align-items: start;
+      margin-bottom: 28px;
+    }
+
+    .section-no {
+      padding-top: 5px;
+      color: var(--orange);
+      font: 800 12px/1 var(--mono);
+      letter-spacing: .1em;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: clamp(30px, 4vw, 48px);
+      line-height: 1.1;
+      letter-spacing: -.045em;
+    }
+
+    h3 {
+      margin: 34px 0 10px;
+      font-size: 22px;
+      line-height: 1.35;
+      letter-spacing: -.02em;
+    }
+
+    h4 {
+      margin: 22px 0 8px;
+      font-size: 16px;
+    }
+
+    p { margin: 12px 0; }
+    .section-intro {
+      max-width: 780px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 15px;
+      margin: 24px 0;
+    }
+
+    .card {
+      min-width: 0;
+      padding: 22px;
+      background: rgba(255,253,248,.88);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 8px 24px rgba(22,48,39,.045);
+    }
+
+    .card .label {
+      display: block;
+      margin-bottom: 14px;
+      color: var(--orange);
+      font: 800 10px/1 var(--mono);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .card strong {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 20px;
+      line-height: 1.3;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .big-answer {
+      margin: 28px 0;
+      padding: 28px clamp(22px, 4vw, 42px);
+      color: #fefbf2;
+      background: var(--forest);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .big-answer small {
+      display: block;
+      color: var(--yellow);
+      font: 700 10px/1 var(--mono);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .big-answer p {
+      margin: 9px 0 0;
+      font-size: clamp(20px, 3vw, 30px);
+      line-height: 1.45;
+      letter-spacing: -.025em;
+    }
+
+    .diagram {
+      display: grid;
+      grid-template-columns: 1fr 90px 1fr;
+      align-items: center;
+      gap: 14px;
+      margin: 28px 0;
+    }
+
+    .node-box {
+      position: relative;
+      min-height: 160px;
+      padding: 24px;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+
+    .node-box b {
+      display: block;
+      color: var(--forest);
+      font-size: 20px;
+    }
+
+    .node-box code {
+      display: block;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .node-box em {
+      display: inline-block;
+      margin-top: 18px;
+      padding: 4px 9px;
+      color: var(--forest-2);
+      background: var(--mint);
+      border-radius: 999px;
+      font: 700 11px/1.4 var(--mono);
+      font-style: normal;
+    }
+
+    .arrows {
+      display: grid;
+      gap: 22px;
+      color: var(--forest);
+      font: 800 11px/1.2 var(--mono);
+      text-align: center;
+    }
+
+    .arrow {
+      position: relative;
+      padding: 0 0 5px;
+      border-bottom: 2px solid currentColor;
+    }
+
+    .arrow::after {
+      content: "";
+      position: absolute;
+      right: -1px;
+      bottom: -5px;
+      width: 7px;
+      height: 7px;
+      border-right: 2px solid currentColor;
+      border-top: 2px solid currentColor;
+      transform: rotate(45deg);
+    }
+
+    .arrow.back { transform: scaleX(-1); }
+    .arrow.back span { display: inline-block; transform: scaleX(-1); }
+
+    .tree {
+      padding: 22px;
+      overflow-x: auto;
+      color: #eaf5ef;
+      background: #13231e;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .tree pre { margin: 0; font-size: 13px; line-height: 1.75; }
+    .tree .folder { color: var(--yellow); }
+    .tree .focus { color: #8be0bb; font-weight: 700; }
+    .tree .dim { color: #81928b; }
+
+    .table-wrap {
+      margin: 22px 0;
+      overflow-x: auto;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+
+    table {
+      width: 100%;
+      min-width: 680px;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--forest);
+      background: rgba(185,223,206,.22);
+      font-size: 12px;
+      letter-spacing: .05em;
+    }
+
+    td { font-size: 14px; }
+    tr:last-child td { border-bottom: 0; }
+    td code { color: var(--forest); font-size: 12px; }
+
+    .code {
+      position: relative;
+      margin: 18px 0;
+      overflow: hidden;
+      color: #e8f1ec;
+      background: #14241f;
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 14px;
+      box-shadow: 0 12px 30px rgba(17,33,27,.1);
+    }
+
+    .code-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 42px;
+      padding: 8px 10px 8px 16px;
+      color: #97aaa1;
+      background: rgba(255,255,255,.035);
+      border-bottom: 1px solid rgba(255,255,255,.07);
+      font: 11px/1.3 var(--mono);
+    }
+
+    .dots { color: #d86147; letter-spacing: 3px; }
+    .copy {
+      padding: 5px 9px;
+      color: #b5c6be;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,.13);
+      border-radius: 7px;
+      cursor: pointer;
+      font: 11px/1.2 var(--sans);
+    }
+
+    .copy:hover { color: white; border-color: rgba(255,255,255,.35); }
+    .code pre {
+      margin: 0;
+      padding: 19px;
+      overflow-x: auto;
+      font-size: 13px;
+      line-height: 1.72;
+      tab-size: 4;
+    }
+
+    .kw { color: #efc95c; }
+    .fn { color: #8fd6b7; }
+    .st { color: #eaa687; }
+    .cm { color: #7d9289; }
+    .ty { color: #88bddc; }
+    .num { color: #d7a7e2; }
+
+    .callout {
+      position: relative;
+      margin: 20px 0;
+      padding: 18px 20px 18px 52px;
+      background: rgba(255,253,248,.8);
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--blue);
+      border-radius: 12px;
+    }
+
+    .callout::before {
+      content: "i";
+      position: absolute;
+      left: 17px;
+      top: 19px;
+      display: grid;
+      place-items: center;
+      width: 20px;
+      height: 20px;
+      color: white;
+      background: var(--blue);
+      border-radius: 50%;
+      font: 800 12px/1 serif;
+    }
+
+    .callout.warn { border-left-color: var(--orange); }
+    .callout.warn::before { content: "!"; background: var(--orange); }
+    .callout.good { border-left-color: var(--forest); }
+    .callout.good::before { content: "✓"; background: var(--forest); }
+    .callout strong { color: var(--forest); }
+    .callout p { margin: 4px 0; color: var(--muted); font-size: 14px; }
+
+    .steps {
+      margin: 26px 0;
+      padding: 0;
+      list-style: none;
+      counter-reset: steps;
+    }
+
+    .steps > li {
+      position: relative;
+      margin-left: 22px;
+      padding: 0 0 28px 42px;
+      border-left: 1px solid rgba(22,75,59,.28);
+      counter-increment: steps;
+    }
+
+    .steps > li:last-child { border-left-color: transparent; }
+    .steps > li::before {
+      content: counter(steps);
+      position: absolute;
+      left: -18px;
+      top: -3px;
+      display: grid;
+      place-items: center;
+      width: 35px;
+      height: 35px;
+      color: var(--white);
+      background: var(--forest);
+      border: 5px solid var(--paper);
+      border-radius: 50%;
+      font: 800 11px/1 var(--mono);
+    }
+
+    .steps h3 { margin: 0 0 8px; }
+    .steps p { color: var(--muted); }
+
+    .terminal-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin: 22px 0;
+    }
+
+    .terminal-grid .code { margin: 0; }
+    .terminal-grid pre { min-height: 180px; font-size: 11px; }
+
+    .file-walk {
+      display: grid;
+      grid-template-columns: 52px minmax(0, 1fr);
+      gap: 14px;
+      margin: 16px 0;
+      padding: 18px;
+      background: rgba(255,253,248,.8);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+    }
+
+    .file-walk .ln {
+      padding-top: 2px;
+      color: var(--orange);
+      font: 800 11px/1.5 var(--mono);
+    }
+
+    .file-walk b { display: block; color: var(--forest); }
+    .file-walk p { margin: 5px 0 0; color: var(--muted); font-size: 14px; }
+
+    details {
+      margin: 11px 0;
+      background: rgba(255,253,248,.78);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+    }
+
+    summary {
+      padding: 15px 18px;
+      color: var(--forest);
+      cursor: pointer;
+      font-weight: 750;
+    }
+
+    details > div { padding: 0 18px 17px; color: var(--muted); }
+    details p:last-child { margin-bottom: 0; }
+
+    .quiz {
+      margin: 18px 0;
+      padding: 20px;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+    }
+
+    .quiz p { margin-top: 0; font-weight: 700; }
+    .quiz label {
+      display: block;
+      margin: 7px 0;
+      padding: 9px 12px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      cursor: pointer;
+    }
+
+    .quiz label:hover { background: rgba(185,223,206,.18); }
+    .quiz-result { min-height: 25px; margin-top: 10px; color: var(--forest); font-weight: 700; }
+
+    .checklist {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 10px;
+      padding: 0;
+      list-style: none;
+    }
+
+    .checklist li {
+      position: relative;
+      padding: 14px 14px 14px 44px;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+    }
+
+    .checklist li::before {
+      content: "□";
+      position: absolute;
+      left: 16px;
+      color: var(--forest);
+      font: 22px/1 var(--mono);
+    }
+
+    .footer {
+      margin-top: 70px;
+      padding: 30px 0;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+      font-size: 13px;
+    }
+
+    .footer b { color: var(--forest); }
+    .back-top {
+      float: right;
+      color: var(--forest);
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    @media (max-width: 980px) {
+      .layout { display: block; }
+      .side { display: none; }
+      .mobile-nav { display: block; }
+      .content { width: min(100% - 32px, 900px); padding-top: 20px; }
+      .hero { min-height: 520px; }
+      .card-grid { grid-template-columns: 1fr 1fr; }
+      .terminal-grid { grid-template-columns: 1fr; }
+      .terminal-grid pre { min-height: 0; }
+    }
+
+    @media (max-width: 650px) {
+      .content { width: min(100% - 22px, 900px); }
+      .hero { min-height: 570px; padding: 30px 23px; border-radius: 20px; }
+      .hero-path { left: 23px; right: 23px; overflow-wrap: anywhere; }
+      .section-head { grid-template-columns: 1fr; gap: 7px; }
+      section { padding-top: 58px; }
+      .card-grid, .checklist { grid-template-columns: 1fr; }
+      .diagram { grid-template-columns: 1fr; }
+      .arrows { grid-template-columns: 1fr 1fr; width: 110px; margin: 0 auto; transform: rotate(90deg); }
+      .node-box { min-height: 0; }
+      .file-walk { grid-template-columns: 1fr; }
+      .steps > li { margin-left: 15px; padding-left: 30px; }
+    }
+
+    @media print {
+      body { background: white; font-size: 11pt; }
+      .side, .mobile-nav, .copy, .progress-wrap { display: none !important; }
+      .layout { display: block; }
+      .content { width: 100%; padding: 0; }
+      .hero { min-height: auto; color: var(--ink); background: white; border: 2px solid var(--ink); box-shadow: none; break-after: page; }
+      .hero-lead, .hero-path { color: var(--muted); }
+      section { break-inside: auto; }
+      .code, .tree, .big-answer { box-shadow: none; }
+      a { text-decoration: none; }
+    }
+  </style>
+</head>
+<body id="top">
+  <div class="layout">
+    <aside class="side" aria-label="章节导航">
+      <div class="brand">
+        <div class="brand-mark">R2</div>
+        <h2>巡逻服务解剖课</h2>
+        <p>ROS 2 Humble · Python · chapt4_ws</p>
+      </div>
+      <div class="progress-wrap">阅读进度 <span id="progressText">0%</span>
+        <div class="progress"><i id="progressBar"></i></div>
+      </div>
+      <nav>
+        <ol class="nav" id="toc">
+          <li><a href="#overview"><span>01</span>先看懂这个项目</a></li>
+          <li><a href="#foundations"><span>02</span>ROS 2 基础地图</a></li>
+          <li><a href="#service"><span>03</span>Service 的心智模型</a></li>
+          <li><a href="#workspace"><span>04</span>工作空间逐层解读</a></li>
+          <li><a href="#interface"><span>05</span>自定义 .srv 接口</a></li>
+          <li><a href="#server"><span>06</span>服务端逐行读</a></li>
+          <li><a href="#client"><span>07</span>客户端逐行读</a></li>
+          <li><a href="#run"><span>08</span>构建与运行实战</a></li>
+          <li><a href="#parameters"><span>09</span>参数与远程修改</a></li>
+          <li><a href="#fromzero"><span>10</span>从零重写一遍</a></li>
+          <li><a href="#commands"><span>11</span>常用命令速查</a></li>
+          <li><a href="#debug"><span>12</span>故障排查与代码体检</a></li>
+          <li><a href="#practice"><span>13</span>练习与自测</a></li>
+        </ol>
+      </nav>
+      <div class="side-note">本页不依赖网络。代码块右上角可复制；打印时会自动转换为适合纸张的版式。</div>
+    </aside>
+
+    <main>
+      <div class="mobile-nav">
+        <select id="mobileSelect" aria-label="跳转章节">
+          <option value="#overview">01 · 先看懂这个项目</option>
+          <option value="#foundations">02 · ROS 2 基础地图</option>
+          <option value="#service">03 · Service 的心智模型</option>
+          <option value="#workspace">04 · 工作空间逐层解读</option>
+          <option value="#interface">05 · 自定义 .srv 接口</option>
+          <option value="#server">06 · 服务端逐行读</option>
+          <option value="#client">07 · 客户端逐行读</option>
+          <option value="#run">08 · 构建与运行实战</option>
+          <option value="#parameters">09 · 参数与远程修改</option>
+          <option value="#fromzero">10 · 从零重写一遍</option>
+          <option value="#commands">11 · 常用命令速查</option>
+          <option value="#debug">12 · 故障排查与代码体检</option>
+          <option value="#practice">13 · 练习与自测</option>
+        </select>
+      </div>
+
+      <div class="content">
+        <header class="hero">
+          <p class="kicker">Workspace field guide · 2026</p>
+          <h1>忘了 ROS 2 服务？从一次巡逻任务重新学会。</h1>
+          <p class="hero-lead">这不是泛泛的语法手册，而是以你工作空间里的真实代码为标本：看懂接口、服务端、客户端、参数系统，再亲手从零写出同一个服务。</p>
+          <div class="hero-meta">
+            <span class="pill">ROS 2 Humble</span>
+            <span class="pill">rclpy / Python 3.10</span>
+            <span class="pill">ament_cmake + ament_python</span>
+            <span class="pill">离线可读</span>
+          </div>
+          <div class="hero-path">/home/yezi/ROS2/chapt4/chapt4_ws</div>
+        </header>
+
+        <section id="overview">
+          <div class="section-head">
+            <div class="section-no">01 / OVERVIEW</div>
+            <div>
+              <h2>先用一分钟看懂这个项目</h2>
+              <p class="section-intro">你的项目模拟“给机器人下发巡逻点”。客户端说要去哪里，服务端根据参数 <code>allow</code> 决定接不接，并把结果答回去。</p>
+            </div>
+          </div>
+
+          <div class="big-answer">
+            <small>全篇最重要的一句话</small>
+            <p>客户端填写 <code>Request</code>，服务端读取请求并填写 <code>Response</code>。</p>
+          </div>
+
+          <div class="diagram" aria-label="服务请求响应流程图">
+            <div class="node-box">
+              <b>patrol_client</b>
+              <code>target_name = "room_A"</code>
+              <em>提出问题</em>
+            </div>
+            <div class="arrows">
+              <div class="arrow"><span>Request</span></div>
+              <div class="arrow back"><span>Response</span></div>
+            </div>
+            <div class="node-box">
+              <b>patrol_server</b>
+              <code>allow ? accepted : rejected</code>
+              <em>处理并回答</em>
+            </div>
+          </div>
+
+          <div class="card-grid">
+            <article class="card">
+              <span class="label">输入</span>
+              <strong>目标点名称</strong>
+              <p><code>string target_name</code>，例如 <code>room_A</code>。</p>
+            </article>
+            <article class="card">
+              <span class="label">判断</span>
+              <strong>是否允许任务</strong>
+              <p>服务端参数 <code>allow</code> 默认为 <code>true</code>。</p>
+            </article>
+            <article class="card">
+              <span class="label">输出</span>
+              <strong>接受状态 + 消息</strong>
+              <p><code>bool accepted</code> 与 <code>string message</code>。</p>
+            </article>
+          </div>
+
+          <h3>一次真实调用会发生什么？</h3>
+          <ol class="steps">
+            <li><h3>服务端启动</h3><p>节点注册名为 <code>patrol_task</code> 的服务，并等待请求。</p></li>
+            <li><h3>客户端寻找服务</h3><p>每隔 1 秒检查一次。如果没发现，就输出 waiting 日志。</p></li>
+            <li><h3>客户端发送请求</h3><p>从参数 <code>target_name</code> 取得 <code>room_A</code>，写进请求对象。</p></li>
+            <li><h3>服务端做决定</h3><p>读取 <code>robot_name</code> 和 <code>allow</code>；默认会接受任务。</p></li>
+            <li><h3>客户端打印答案</h3><p>得到 <code>accepted: True</code> 和带机器人名称的说明。</p></li>
+          </ol>
+        </section>
+
+        <section id="foundations">
+          <div class="section-head">
+            <div class="section-no">02 / BASICS</div>
+            <div>
+              <h2>ROS 2 基础地图</h2>
+              <p class="section-intro">先把经常混淆的名词摆到正确层级。ROS 2 的核心不是“运行一堆脚本”，而是让多个节点组成一张可发现、可通信的计算图。</p>
+            </div>
+          </div>
+
+          <div class="card-grid">
+            <article class="card"><span class="label">Workspace</span><strong>工作空间</strong><p>容纳多个包的开发目录。你的工作空间是 <code>chapt4_ws</code>。</p></article>
+            <article class="card"><span class="label">Package</span><strong>功能包</strong><p>ROS 2 的构建和分发单元。本项目有 2 个包。</p></article>
+            <article class="card"><span class="label">Node</span><strong>节点</strong><p>一个运行中的功能实体，例如服务端节点。</p></article>
+            <article class="card"><span class="label">Interface</span><strong>接口</strong><p>通信双方共同遵守的数据结构：<code>.msg</code>、<code>.srv</code>、<code>.action</code>。</p></article>
+            <article class="card"><span class="label">Graph</span><strong>计算图</strong><p>当前节点、话题、服务和动作组成的动态关系图。</p></article>
+            <article class="card"><span class="label">DDS</span><strong>底层通信</strong><p>ROS 2 通常借助 DDS 做节点发现和数据传输，你写 rclpy 时无需直接操作它。</p></article>
+          </div>
+
+          <h3>Topic、Service、Action 怎么选？</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>方式</th><th>通信感觉</th><th>适合</th><th>不适合</th><th>例子</th></tr></thead>
+              <tbody>
+                <tr><td><b>Topic</b></td><td>持续发布 / 订阅</td><td>连续数据流</td><td>必须得到一次明确答复</td><td>相机图像、雷达、速度指令</td></tr>
+                <tr><td><b>Service</b></td><td>一次请求 / 一次响应</td><td>短时、快速完成的查询或操作</td><td>耗时很久、要进度、要取消</td><td>查询状态、切换模式、下发简单任务</td></tr>
+                <tr><td><b>Action</b></td><td>目标 / 反馈 / 结果</td><td>长任务、有进度、可取消</td><td>高频连续数据</td><td>导航到目标点、机械臂抓取</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="callout warn">
+            <strong>巡逻在真实项目里可能更适合 Action</strong>
+            <p>本例的服务只回答“接不接受”，非常快，因此 Service 合理。如果要等机器人真的走到房间、持续反馈百分比并允许取消，就应改用 Action。</p>
+          </div>
+
+          <h3>包、节点、可执行程序不是同一个东西</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>概念</th><th>本项目实例</th><th>如何查看</th></tr></thead>
+              <tbody>
+                <tr><td>包名</td><td><code>patrol_service_demo</code></td><td><code>ros2 pkg list</code></td></tr>
+                <tr><td>可执行程序名</td><td><code>patrol_server</code></td><td><code>ros2 pkg executables patrol_service_demo</code></td></tr>
+                <tr><td>节点名</td><td><code>/patrol_server</code></td><td><code>ros2 node list</code></td></tr>
+                <tr><td>服务名</td><td><code>/patrol_task</code></td><td><code>ros2 service list</code></td></tr>
+                <tr><td>服务类型</td><td><code>chapt4_interfaces/srv/PatrolTask</code></td><td><code>ros2 service type /patrol_task</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="service">
+          <div class="section-head">
+            <div class="section-no">03 / SERVICE</div>
+            <div>
+              <h2>Service 的心智模型</h2>
+              <p class="section-intro">把服务想成带固定表格的客服窗口：双方先约定表格格式，客户端提交请求表，服务端填写答复表。</p>
+            </div>
+          </div>
+
+          <div class="code">
+            <div class="code-head"><span>概念伪代码</span><button class="copy">复制</button></div>
+            <pre><code><span class="cm"># 客户端</span>
+request = PatrolTask.Request()
+request.target_name = <span class="st">"room_A"</span>
+future = client.call_async(request)
+
+<span class="cm"># 服务端回调</span>
+<span class="kw">def</span> <span class="fn">callback</span>(request, response):
+    response.accepted = <span class="kw">True</span>
+    response.message = <span class="st">"任务已接受"</span>
+    <span class="kw">return</span> response</code></pre>
+          </div>
+
+          <h3>为什么叫异步调用？</h3>
+          <p><code>call_async()</code> 不会当场给出结果，而是先返回一个 <code>Future</code>——可以理解成“将来会装入结果的盒子”。本项目随后用 <code>spin_until_future_complete()</code> 驱动事件循环，直到这个盒子完成。</p>
+          <div class="callout">
+            <strong>异步 API，不等于程序一定并行</strong>
+            <p>这里仍然主动等到 Future 完成才继续，所以从业务流程看，它像同步等待；优势是等待过程交给 ROS 2 执行器处理。</p>
+          </div>
+
+          <h3>服务能否“记住”客户端？</h3>
+          <p>普通 Service 是离散的一问一答。服务端可以在节点对象里保存自己的状态，但每次请求本身并不天然形成长会话。若需要任务生命周期、进度和取消，应考虑 Action。</p>
+        </section>
+
+        <section id="workspace">
+          <div class="section-head">
+            <div class="section-no">04 / WORKSPACE</div>
+            <div>
+              <h2>工作空间逐层解读</h2>
+              <p class="section-intro">项目采用典型做法：接口单独一个 CMake 包，Python 业务代码另一个包。这样别的 C++ 或 Python 包也能复用同一份接口。</p>
+            </div>
+          </div>
+
+          <div class="tree">
+<pre><span class="folder">chapt4_ws/</span>
+└── <span class="folder">src/</span>                              <span class="dim"># 你真正维护的源码</span>
+    ├── <span class="folder">chapt4_interfaces/</span>              <span class="dim"># 自定义接口包（ament_cmake）</span>
+    │   ├── <span class="focus">srv/PatrolTask.srv</span>          <span class="dim"># 请求与响应结构</span>
+    │   ├── CMakeLists.txt               <span class="dim"># 生成接口代码</span>
+    │   └── package.xml                  <span class="dim"># 依赖声明</span>
+    └── <span class="folder">patrol_service_demo/</span>           <span class="dim"># Python 功能包（ament_python）</span>
+        ├── <span class="folder">patrol_service_demo/</span>
+        │   ├── <span class="focus">patrol_server.py</span>        <span class="dim"># 服务端</span>
+        │   ├── <span class="focus">patrol_client.py</span>        <span class="dim"># 客户端</span>
+        │   ├── parameter_event_watcher.py <span class="dim"># 参数事件监听</span>
+        │   └── remote_param_setter.py   <span class="dim"># 远程改参数</span>
+        ├── setup.py                     <span class="dim"># Python 安装和入口点</span>
+        ├── setup.cfg                    <span class="dim"># 可执行文件安装目录</span>
+        ├── package.xml                  <span class="dim"># ROS 依赖声明</span>
+        └── <span class="folder">test/</span>                       <span class="dim"># 自动化检查</span></pre>
+          </div>
+
+          <h3>构建后还会出现三个目录</h3>
+          <div class="card-grid">
+            <article class="card"><span class="label">build/</span><strong>中间产物</strong><p>每个包的构建临时文件。出问题时可有针对性地清理，但不要把它当源码改。</p></article>
+            <article class="card"><span class="label">install/</span><strong>可运行结果</strong><p><code>source install/setup.bash</code> 后，ROS 2 才能发现刚构建的包和接口。</p></article>
+            <article class="card"><span class="label">log/</span><strong>构建日志</strong><p>编译失败时的详细记录，尤其适合寻找第一个 error。</p></article>
+          </div>
+
+          <div class="callout good">
+            <strong>只编辑 src，构建交给 colcon</strong>
+            <p>不要直接修改 <code>build/</code> 或 <code>install/</code> 里的生成代码，因为下一次构建会覆盖它们。</p>
+          </div>
+
+          <h3><code>setup.py</code> 为什么重要？</h3>
+          <p>其中的 <code>console_scripts</code> 把命令名映射到 Python 的 <code>main()</code>：</p>
+          <div class="code">
+            <div class="code-head"><span>patrol_service_demo/setup.py · 入口点</span><button class="copy">复制</button></div>
+            <pre><code>entry_points={
+    <span class="st">'console_scripts'</span>: [
+        <span class="st">'patrol_server = patrol_service_demo.patrol_server:main'</span>,
+        <span class="st">'patrol_client = patrol_service_demo.patrol_client:main'</span>,
+        <span class="st">'parameter_event_watcher = patrol_service_demo.parameter_event_watcher:main'</span>,
+        <span class="st">'remote_param_setter = patrol_service_demo.remote_param_setter:main'</span>,
+    ],
+}</code></pre>
+          </div>
+          <p>于是 <code>ros2 run patrol_service_demo patrol_server</code> 的意思就是：在该包中找到名为 <code>patrol_server</code> 的入口，然后调用对应模块的 <code>main()</code>。</p>
+        </section>
+
+        <section id="interface">
+          <div class="section-head">
+            <div class="section-no">05 / INTERFACE</div>
+            <div>
+              <h2>自定义 <code>.srv</code> 接口</h2>
+              <p class="section-intro">接口是客户端和服务端之间的合同。改动接口后必须重新构建并重新 source，双方必须使用相同类型。</p>
+            </div>
+          </div>
+
+          <div class="code">
+            <div class="code-head"><span>chapt4_interfaces/srv/PatrolTask.srv</span><button class="copy">复制</button></div>
+            <pre><code><span class="ty">string</span> target_name
+---
+<span class="ty">bool</span> accepted
+<span class="ty">string</span> message</code></pre>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>位置</th><th>字段</th><th>谁填写</th><th>含义 / 例子</th></tr></thead>
+              <tbody>
+                <tr><td><code>---</code> 上方</td><td><code>string target_name</code></td><td>客户端</td><td>目的地，例如 <code>room_A</code></td></tr>
+                <tr><td><code>---</code> 下方</td><td><code>bool accepted</code></td><td>服务端</td><td>是否接单：<code>true</code> / <code>false</code></td></tr>
+                <tr><td><code>---</code> 下方</td><td><code>string message</code></td><td>服务端</td><td>解释文本，例如“robot-01 accepted…”</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>接口包的三处关键配置</h3>
+          <div class="file-walk">
+            <div class="ln">CMAKE</div>
+            <div><b><code>find_package(rosidl_default_generators REQUIRED)</code></b><p>找到 ROS 接口代码生成器。</p></div>
+          </div>
+          <div class="file-walk">
+            <div class="ln">CMAKE</div>
+            <div><b><code>rosidl_generate_interfaces(${PROJECT_NAME} "srv/PatrolTask.srv")</code></b><p>把这份 .srv 加入生成列表。</p></div>
+          </div>
+          <div class="file-walk">
+            <div class="ln">XML</div>
+            <div><b><code>&lt;member_of_group&gt;rosidl_interface_packages&lt;/member_of_group&gt;</code></b><p>声明这是一个 ROS 接口包；运行时依赖是 <code>rosidl_default_runtime</code>。</p></div>
+          </div>
+
+          <h3>构建后，Python 看见了什么？</h3>
+          <p>生成器会产生 Python 类型，于是代码可以写：</p>
+          <div class="code">
+            <div class="code-head"><span>生成接口的使用方式</span><button class="copy">复制</button></div>
+            <pre><code><span class="kw">from</span> chapt4_interfaces.srv <span class="kw">import</span> PatrolTask
+
+request = PatrolTask.Request()
+response = PatrolTask.Response()</code></pre>
+          </div>
+          <div class="callout warn">
+            <strong>不要手写 Request / Response 类</strong>
+            <p>它们由 ROS 2 从 <code>PatrolTask.srv</code> 自动生成。若 import 失败，先怀疑“未构建 / 未 source / 构建失败”，而不是自己补 Python 类。</p>
+          </div>
+        </section>
+
+        <section id="server">
+          <div class="section-head">
+            <div class="section-no">06 / SERVER</div>
+            <div>
+              <h2>服务端逐行读</h2>
+              <p class="section-intro">服务端做四件事：创建节点、声明参数、注册服务、在回调里填写响应。</p>
+            </div>
+          </div>
+
+          <div class="code">
+            <div class="code-head"><span>patrol_server.py · 核心代码（与项目一致）</span><button class="copy">复制</button></div>
+            <pre><code><span class="kw">import</span> rclpy
+<span class="kw">from</span> chapt4_interfaces.srv <span class="kw">import</span> PatrolTask
+<span class="kw">from</span> rcl_interfaces.msg <span class="kw">import</span> SetParametersResult
+<span class="kw">from</span> rclpy.node <span class="kw">import</span> Node
+
+<span class="kw">class</span> <span class="ty">PatrolServer</span>(Node):
+    <span class="kw">def</span> <span class="fn">__init__</span>(self):
+        <span class="fn">super</span>().__init__(<span class="st">'patrol_server'</span>)
+        self.declare_parameter(<span class="st">'robot_name'</span>, <span class="st">'robot-01'</span>)
+        self.declare_parameter(<span class="st">'allow'</span>, <span class="kw">True</span>)
+        self.add_on_set_parameters_callback(self.on_parameter_update)
+        self.service = self.create_service(
+            PatrolTask, <span class="st">'patrol_task'</span>, self.handle_patrol_task)
+
+    <span class="kw">def</span> <span class="fn">on_parameter_update</span>(self, pars):
+        <span class="kw">for</span> par <span class="kw">in</span> pars:
+            <span class="kw">if</span> par.name == <span class="st">'robot_name'</span> <span class="kw">and</span> par.value == <span class="st">''</span>:
+                <span class="kw">return</span> SetParametersResult(
+                    successful=<span class="kw">False</span>, reason=<span class="st">'robot_name cannot be empty'</span>)
+        <span class="kw">return</span> SetParametersResult(successful=<span class="kw">True</span>)
+
+    <span class="kw">def</span> <span class="fn">handle_patrol_task</span>(self, request, response):
+        robot_name = self.get_parameter(<span class="st">'robot_name'</span>).value
+        allow_task = self.get_parameter(<span class="st">'allow'</span>).value
+        <span class="kw">if</span> allow_task:
+            response.accepted = <span class="kw">True</span>
+            response.message = robot_name + <span class="st">' accepted target: '</span> + request.target_name
+        <span class="kw">else</span>:
+            response.accepted = <span class="kw">False</span>
+            response.message = robot_name + <span class="st">' rejected target: '</span> + request.target_name
+        <span class="kw">return</span> response</code></pre>
+          </div>
+
+          <div class="file-walk"><div class="ln">01</div><div><b><code>class PatrolServer(Node)</code></b><p>继承 <code>Node</code>，获得日志、参数、服务、定时器等 ROS 2 能力。类名是 Python 概念，节点名由下一行决定。</p></div></div>
+          <div class="file-walk"><div class="ln">02</div><div><b><code>super().__init__('patrol_server')</code></b><p>初始化 ROS 节点。运行后 <code>ros2 node list</code> 会看到 <code>/patrol_server</code>。</p></div></div>
+          <div class="file-walk"><div class="ln">03</div><div><b><code>declare_parameter(...)</code></b><p>参数要先声明才能按常规方式读写。这里给出两个默认值，ROS 2 会推断 STRING 与 BOOL 类型。</p></div></div>
+          <div class="file-walk"><div class="ln">04</div><div><b><code>add_on_set_parameters_callback(...)</code></b><p>参数真正修改前先审查。若 <code>robot_name</code> 为空字符串，就返回失败并说明原因。</p></div></div>
+          <div class="file-walk"><div class="ln">05</div><div><b><code>create_service(类型, 名称, 回调)</code></b><p>注册 <code>/patrol_task</code>。类型必须和客户端相同；名称也必须解析到同一个服务。</p></div></div>
+          <div class="file-walk"><div class="ln">06</div><div><b><code>handle_patrol_task(request, response)</code></b><p>每来一个请求，执行一次。读取 <code>request.target_name</code>，填写响应的两个字段，最后返回 <code>response</code>。</p></div></div>
+
+          <h3><code>main()</code> 为什么必须 spin？</h3>
+          <div class="code">
+            <div class="code-head"><span>patrol_server.py · 生命周期</span><button class="copy">复制</button></div>
+            <pre><code><span class="kw">def</span> <span class="fn">main</span>(args=<span class="kw">None</span>):
+    rclpy.init(args=args)       <span class="cm"># 初始化 ROS 2 客户端库</span>
+    node = PatrolServer()       <span class="cm"># 创建节点</span>
+    <span class="kw">try</span>:
+        rclpy.spin(node)        <span class="cm"># 持续处理请求和事件</span>
+    <span class="kw">finally</span>:
+        rclpy.shutdown()        <span class="cm"># Ctrl+C 后关闭</span></code></pre>
+          </div>
+          <p><code>spin()</code> 相当于节点的“接线员”：不断等待并分发服务请求、订阅消息和参数事件。没有它，脚本创建完节点就退出，回调永远没机会执行。</p>
+          <div class="callout warn">
+            <strong>当前源码在 Humble 下停止时可能打印 shutdown 回溯</strong>
+            <p>实测服务调用本身正常，但 SIGINT/Ctrl+C 的默认处理可能已经关闭 rclpy，<code>finally</code> 又调用一次 <code>rclpy.shutdown()</code>，于是出现 <code>rcl_shutdown already called</code>。可改用 <code>rclpy.try_shutdown()</code>，或先判断上下文是否仍为 <code>ok()</code>；这属于退出清理问题，不是服务请求失败。</p>
+          </div>
+        </section>
+
+        <section id="client">
+          <div class="section-head">
+            <div class="section-no">07 / CLIENT</div>
+            <div>
+              <h2>客户端逐行读</h2>
+              <p class="section-intro">客户端不长期 spin，而是等服务、发送一次、等结果、打印后退出。</p>
+            </div>
+          </div>
+
+          <div class="code">
+            <div class="code-head"><span>patrol_client.py · 核心代码（与项目一致）</span><button class="copy">复制</button></div>
+            <pre><code><span class="kw">class</span> <span class="ty">PatrolClient</span>(Node):
+    <span class="kw">def</span> <span class="fn">__init__</span>(self):
+        <span class="fn">super</span>().__init__(<span class="st">'patrol_client'</span>)
+        self.declare_parameter(<span class="st">'target_name'</span>, <span class="st">'room_A'</span>)
+        self.client = self.create_client(PatrolTask, <span class="st">'patrol_task'</span>)
+
+    <span class="kw">def</span> <span class="fn">send_reauest</span>(self):
+        <span class="kw">while not</span> self.client.wait_for_service(<span class="num">1.0</span>):
+            self.get_logger().info(<span class="st">'waiting for patrol_task service...'</span>)
+
+        request = PatrolTask.Request()
+        request.target_name = self.get_parameter(<span class="st">'target_name'</span>).value
+        fu = self.client.call_async(request)
+        rclpy.spin_until_future_complete(self, fu)
+        response = fu.result()
+        self.get_logger().info(<span class="st">'accepted: '</span> + <span class="fn">str</span>(response.accepted))
+        self.get_logger().info(<span class="st">'message: '</span> + response.message)</code></pre>
+          </div>
+
+          <div class="file-walk"><div class="ln">01</div><div><b><code>create_client(PatrolTask, 'patrol_task')</code></b><p>创建代理。它不会创建服务，只是准备和指定名称、指定类型的服务通信。</p></div></div>
+          <div class="file-walk"><div class="ln">02</div><div><b><code>wait_for_service(1.0)</code></b><p>最多等 1 秒返回一次布尔值。外层 while 让它持续等待，同时周期性打印提示。</p></div></div>
+          <div class="file-walk"><div class="ln">03</div><div><b><code>PatrolTask.Request()</code></b><p>创建由 .srv 生成的请求对象。字段名必须严格是 <code>target_name</code>。</p></div></div>
+          <div class="file-walk"><div class="ln">04</div><div><b><code>call_async(request)</code></b><p>发出请求并立即得到 Future，不是最终 Response。</p></div></div>
+          <div class="file-walk"><div class="ln">05</div><div><b><code>spin_until_future_complete(self, fu)</code></b><p>让当前节点处理 ROS 事件，直到响应到达。之后 <code>fu.result()</code> 才能取到答案。</p></div></div>
+
+          <div class="callout warn">
+            <strong>源码里 <code>send_reauest</code> 拼错了，但目前仍能运行</strong>
+            <p>它只是自定义方法名，而且 <code>main()</code> 也用同样的拼法调用，所以 Python 找得到。建议以后重命名为 <code>send_request</code>，可读性更好；这不是 ROS 2 规定的方法名。</p>
+          </div>
+
+          <h3>为什么客户端执行完会退出？</h3>
+          <p><code>send_reauest()</code> 等到响应后返回；<code>finally</code> 中销毁节点并 shutdown。它不是持续服务，不需要一直在线。</p>
+        </section>
+
+        <section id="run">
+          <div class="section-head">
+            <div class="section-no">08 / RUN</div>
+            <div>
+              <h2>构建与运行：照着终端做</h2>
+              <p class="section-intro">以下命令使用你机器上的真实绝对路径。每开一个新终端，都要先加载 ROS 2，再加载工作空间。</p>
+            </div>
+          </div>
+
+          <ol class="steps">
+            <li>
+              <h3>构建两个包</h3>
+              <div class="code">
+                <div class="code-head"><span>终端 A · 工作空间根目录</span><button class="copy">复制</button></div>
+                <pre><code><span class="kw">source</span> /opt/ros/humble/setup.bash
+<span class="kw">cd</span> /home/yezi/ROS2/chapt4/chapt4_ws
+colcon build --symlink-install
+<span class="kw">source</span> install/setup.bash</code></pre>
+              </div>
+              <p><code>--symlink-install</code> 对 Python 开发方便：很多纯 Python 修改无需完整重装；但修改 <code>.srv</code>、配置或入口点后仍应重新构建。</p>
+            </li>
+            <li>
+              <h3>先确认接口和入口都被发现</h3>
+              <div class="code">
+                <div class="code-head"><span>终端 A · 自检</span><button class="copy">复制</button></div>
+                <pre><code>ros2 interface show chapt4_interfaces/srv/PatrolTask
+ros2 pkg executables patrol_service_demo</code></pre>
+              </div>
+            </li>
+            <li>
+              <h3>准备三个终端</h3>
+              <p>先在每个终端执行：</p>
+              <div class="code">
+                <div class="code-head"><span>每个新终端的共同前置命令</span><button class="copy">复制</button></div>
+                <pre><code><span class="kw">source</span> /opt/ros/humble/setup.bash
+<span class="kw">source</span> /home/yezi/ROS2/chapt4/chapt4_ws/install/setup.bash</code></pre>
+              </div>
+            </li>
+          </ol>
+
+          <div class="terminal-grid">
+            <div class="code">
+              <div class="code-head"><span>终端 1 · 服务端</span><button class="copy">复制</button></div>
+              <pre><code>ros2 run patrol_service_demo patrol_server
+
+<span class="cm"># 预期看到</span>
+[INFO] ... patrol_task service is ready</code></pre>
+            </div>
+            <div class="code">
+              <div class="code-head"><span>终端 2 · 客户端</span><button class="copy">复制</button></div>
+              <pre><code>ros2 run patrol_service_demo patrol_client
+
+<span class="cm"># 预期看到</span>
+accepted: True
+message: robot-01 accepted target: room_A</code></pre>
+            </div>
+            <div class="code">
+              <div class="code-head"><span>终端 3 · 图检查</span><button class="copy">复制</button></div>
+              <pre><code>ros2 node list
+ros2 service list
+ros2 service type /patrol_task
+ros2 service info /patrol_task</code></pre>
+            </div>
+          </div>
+
+          <h3>不用 Python 客户端，也能从命令行调用</h3>
+          <div class="code">
+            <div class="code-head"><span>CLI 直接构造请求</span><button class="copy">复制</button></div>
+            <pre><code>ros2 service call /patrol_task \
+  chapt4_interfaces/srv/PatrolTask \
+  <span class="st">"{target_name: room_B}"</span></code></pre>
+          </div>
+          <p>这条命令特别适合判断问题在“服务端”还是“自己写的客户端”：如果 CLI 能成功，服务端和接口通常没问题，应重点检查客户端。</p>
+
+          <h3>启动时直接覆盖客户端目标参数</h3>
+          <div class="code">
+            <div class="code-head"><span>把目标改成 warehouse</span><button class="copy">复制</button></div>
+            <pre><code>ros2 run patrol_service_demo patrol_client --ros-args \
+  -p target_name:=warehouse</code></pre>
+          </div>
+
+          <div class="callout good">
+            <strong>最稳的学习顺序</strong>
+            <p>服务端 → <code>ros2 service list</code> → CLI call → Python 客户端。每一步都通过后再走下一步，错误范围会非常小。</p>
+          </div>
+        </section>
+
+        <section id="parameters">
+          <div class="section-head">
+            <div class="section-no">09 / PARAMETERS</div>
+            <div>
+              <h2>参数：运行时调节节点行为</h2>
+              <p class="section-intro">参数属于节点，类似节点的可配置设置。本项目用 <code>robot_name</code> 控制回复中的名称，用 <code>allow</code> 控制接受或拒绝。</p>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>参数</th><th>节点</th><th>默认值 / 类型</th><th>作用</th></tr></thead>
+              <tbody>
+                <tr><td><code>robot_name</code></td><td><code>/patrol_server</code></td><td><code>"robot-01"</code> / string</td><td>写进响应消息；不允许空字符串</td></tr>
+                <tr><td><code>allow</code></td><td><code>/patrol_server</code></td><td><code>true</code> / bool</td><td>决定接受还是拒绝任务</td></tr>
+                <tr><td><code>target_name</code></td><td><code>/patrol_client</code></td><td><code>"room_A"</code> / string</td><td>写入请求；客户端结束后该参数随节点消失</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>用 CLI 查看和修改</h3>
+          <div class="code">
+            <div class="code-head"><span>服务端保持运行时执行</span><button class="copy">复制</button></div>
+            <pre><code>ros2 param list /patrol_server
+ros2 param get /patrol_server robot_name
+ros2 param get /patrol_server allow
+
+ros2 param set /patrol_server robot_name robot_02
+ros2 param set /patrol_server allow false</code></pre>
+          </div>
+          <p>此时再调用服务，应该得到 <code>accepted: false</code>，消息含 <code>robot_02 rejected target...</code>。</p>
+
+          <h3>验证参数回调确实在保护数据</h3>
+          <div class="code">
+            <div class="code-head"><span>空字符串会被拒绝</span><button class="copy">复制</button></div>
+            <pre><code>ros2 param set /patrol_server robot_name <span class="st">""</span>
+<span class="cm"># 预期：Set parameter failed: robot_name cannot be empty</span></code></pre>
+          </div>
+
+          <h3>代码方式远程改参数</h3>
+          <p><code>remote_param_setter.py</code> 没有直接访问另一个进程的变量，而是调用每个节点自动提供的参数服务：</p>
+          <div class="code">
+            <div class="code-head"><span>remote_param_setter.py · Humble 兼容方式</span><button class="copy">复制</button></div>
+            <pre><code><span class="kw">from</span> rcl_interfaces.srv <span class="kw">import</span> SetParameters
+
+self.client = self.create_client(
+    SetParameters, <span class="st">'/patrol_server/set_parameters'</span>)
+
+request = SetParameters.Request()
+request.parameters = [
+    Parameter(<span class="st">'robot_name'</span>, Parameter.Type.STRING,
+              <span class="st">'robot_02'</span>).to_parameter_msg(),
+    Parameter(<span class="st">'allow'</span>, Parameter.Type.BOOL,
+              <span class="kw">False</span>).to_parameter_msg(),
+]
+future = self.client.call_async(request)
+rclpy.spin_until_future_complete(self, future)</code></pre>
+          </div>
+          <div class="code">
+            <div class="code-head"><span>运行远程改参节点</span><button class="copy">复制</button></div>
+            <pre><code>ros2 run patrol_service_demo remote_param_setter</code></pre>
+          </div>
+
+          <h3>监听所有节点的参数事件</h3>
+          <p><code>parameter_event_watcher.py</code> 订阅系统话题 <code>/parameter_events</code>，把新建、改变、删除的参数打印出来：</p>
+          <div class="code">
+            <div class="code-head"><span>终端 A 监听；终端 B 改参</span><button class="copy">复制</button></div>
+            <pre><code><span class="cm"># 终端 A</span>
+ros2 run patrol_service_demo parameter_event_watcher
+
+<span class="cm"># 终端 B</span>
+ros2 param set /patrol_server allow true</code></pre>
+          </div>
+          <div class="callout">
+            <strong>参数服务与业务服务是两套服务</strong>
+            <p><code>/patrol_task</code> 是你创建的业务服务；<code>/patrol_server/set_parameters</code> 是节点参数机制提供的服务。它们的类型、用途和请求字段都不同。</p>
+          </div>
+        </section>
+
+        <section id="fromzero">
+          <div class="section-head">
+            <div class="section-no">10 / REBUILD</div>
+            <div>
+              <h2>从零重写一遍</h2>
+              <p class="section-intro">下面不是让你现在覆盖项目，而是一条“合上答案也能重建”的练习路径。建议新建另一个练习工作空间亲手做。</p>
+            </div>
+          </div>
+
+          <ol class="steps">
+            <li>
+              <h3>创建工作空间与两个包</h3>
+              <div class="code">
+                <div class="code-head"><span>创建骨架</span><button class="copy">复制</button></div>
+                <pre><code>mkdir -p ~/patrol_practice_ws/src
+<span class="kw">cd</span> ~/patrol_practice_ws/src
+
+ros2 pkg create practice_interfaces --build-type ament_cmake
+ros2 pkg create practice_patrol --build-type ament_python \
+  --dependencies rclpy rcl_interfaces practice_interfaces
+
+mkdir -p practice_interfaces/srv</code></pre>
+              </div>
+            </li>
+            <li>
+              <h3>设计接口</h3>
+              <p>在 <code>practice_interfaces/srv/PatrolTask.srv</code> 写请求、分隔线、响应：</p>
+              <div class="code"><div class="code-head"><span>PatrolTask.srv</span><button class="copy">复制</button></div><pre><code><span class="ty">string</span> target_name
+---
+<span class="ty">bool</span> accepted
+<span class="ty">string</span> message</code></pre></div>
+            </li>
+            <li>
+              <h3>配置接口生成</h3>
+              <p>在 CMakeLists.txt 中找到 <code>ament_package()</code>，在它之前加入：</p>
+              <div class="code"><div class="code-head"><span>practice_interfaces/CMakeLists.txt</span><button class="copy">复制</button></div><pre><code>find_package(rosidl_default_generators REQUIRED)
+rosidl_generate_interfaces(${PROJECT_NAME}
+  <span class="st">"srv/PatrolTask.srv"</span>
+)</code></pre></div>
+              <p>在接口包的 <code>package.xml</code> 中加入：</p>
+              <div class="code"><div class="code-head"><span>practice_interfaces/package.xml</span><button class="copy">复制</button></div><pre><code>&lt;build_depend&gt;rosidl_default_generators&lt;/build_depend&gt;
+&lt;exec_depend&gt;rosidl_default_runtime&lt;/exec_depend&gt;
+&lt;member_of_group&gt;rosidl_interface_packages&lt;/member_of_group&gt;</code></pre></div>
+            </li>
+            <li>
+              <h3>先只构建接口</h3>
+              <div class="code"><div class="code-head"><span>验证合同</span><button class="copy">复制</button></div><pre><code><span class="kw">cd</span> ~/patrol_practice_ws
+colcon build --packages-select practice_interfaces
+<span class="kw">source</span> install/setup.bash
+ros2 interface show practice_interfaces/srv/PatrolTask</code></pre></div>
+            </li>
+            <li>
+              <h3>写最小服务端</h3>
+              <div class="code"><div class="code-head"><span>practice_patrol/practice_patrol/server.py</span><button class="copy">复制</button></div><pre><code><span class="kw">import</span> rclpy
+<span class="kw">from</span> rclpy.node <span class="kw">import</span> Node
+<span class="kw">from</span> practice_interfaces.srv <span class="kw">import</span> PatrolTask
+
+<span class="kw">class</span> <span class="ty">Server</span>(Node):
+    <span class="kw">def</span> <span class="fn">__init__</span>(self):
+        <span class="fn">super</span>().__init__(<span class="st">'practice_server'</span>)
+        self.srv = self.create_service(
+            PatrolTask, <span class="st">'patrol_task'</span>, self.callback)
+
+    <span class="kw">def</span> <span class="fn">callback</span>(self, request, response):
+        response.accepted = <span class="kw">True</span>
+        response.message = <span class="st">'go to '</span> + request.target_name
+        <span class="kw">return</span> response
+
+<span class="kw">def</span> <span class="fn">main</span>():
+    rclpy.init()
+    node = Server()
+    <span class="kw">try</span>:
+        rclpy.spin(node)
+    <span class="kw">finally</span>:
+        node.destroy_node()
+        rclpy.shutdown()</code></pre></div>
+            </li>
+            <li>
+              <h3>写最小客户端</h3>
+              <div class="code"><div class="code-head"><span>practice_patrol/practice_patrol/client.py</span><button class="copy">复制</button></div><pre><code><span class="kw">import</span> rclpy
+<span class="kw">from</span> rclpy.node <span class="kw">import</span> Node
+<span class="kw">from</span> practice_interfaces.srv <span class="kw">import</span> PatrolTask
+
+<span class="kw">class</span> <span class="ty">Client</span>(Node):
+    <span class="kw">def</span> <span class="fn">__init__</span>(self):
+        <span class="fn">super</span>().__init__(<span class="st">'practice_client'</span>)
+        self.cli = self.create_client(PatrolTask, <span class="st">'patrol_task'</span>)
+
+    <span class="kw">def</span> <span class="fn">send_request</span>(self, target):
+        <span class="kw">while not</span> self.cli.wait_for_service(timeout_sec=<span class="num">1.0</span>):
+            self.get_logger().info(<span class="st">'waiting...'</span>)
+        request = PatrolTask.Request()
+        request.target_name = target
+        future = self.cli.call_async(request)
+        rclpy.spin_until_future_complete(self, future)
+        <span class="kw">return</span> future.result()
+
+<span class="kw">def</span> <span class="fn">main</span>():
+    rclpy.init()
+    node = Client()
+    response = node.send_request(<span class="st">'room_C'</span>)
+    node.get_logger().info(response.message)
+    node.destroy_node()
+    rclpy.shutdown()</code></pre></div>
+            </li>
+            <li>
+              <h3>注册入口、构建、运行</h3>
+              <p>把 <code>server</code> 和 <code>client</code> 加到 Python 包 <code>setup.py</code> 的 <code>console_scripts</code>，然后：</p>
+              <div class="code"><div class="code-head"><span>构建练习包</span><button class="copy">复制</button></div><pre><code><span class="kw">cd</span> ~/patrol_practice_ws
+colcon build --symlink-install
+<span class="kw">source</span> install/setup.bash
+ros2 run practice_patrol server
+<span class="cm"># 新终端 source 后：ros2 run practice_patrol client</span></code></pre></div>
+            </li>
+          </ol>
+        </section>
+
+        <section id="commands">
+          <div class="section-head">
+            <div class="section-no">11 / COMMANDS</div>
+            <div>
+              <h2>ROS 2 常用命令速查</h2>
+              <p class="section-intro">先记住命令骨架：<code>ros2 &lt;资源&gt; &lt;动作&gt;</code>。不知道下一段写什么时按 Tab，CLI 通常会提示。</p>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>目的</th><th>命令</th><th>什么时候用</th></tr></thead>
+              <tbody>
+                <tr><td>列出节点</td><td><code>ros2 node list</code></td><td>确认程序是否活着、节点名是什么</td></tr>
+                <tr><td>看节点详情</td><td><code>ros2 node info /patrol_server</code></td><td>一次看它的订阅、发布、服务和动作</td></tr>
+                <tr><td>列出服务与类型</td><td><code>ros2 service list -t</code></td><td>确认服务名及双方类型</td></tr>
+                <tr><td>查看服务类型</td><td><code>ros2 service type /patrol_task</code></td><td>写 CLI call 前找类型</td></tr>
+                <tr><td>查看接口字段</td><td><code>ros2 interface show chapt4_interfaces/srv/PatrolTask</code></td><td>忘记请求格式时</td></tr>
+                <tr><td>命令行调用服务</td><td><code>ros2 service call ...</code></td><td>隔离客户端故障</td></tr>
+                <tr><td>列出话题与类型</td><td><code>ros2 topic list -t</code></td><td>了解当前数据流</td></tr>
+                <tr><td>查看话题数据</td><td><code>ros2 topic echo /parameter_events</code></td><td>直接观察参数事件</td></tr>
+                <tr><td>列出节点参数</td><td><code>ros2 param list /patrol_server</code></td><td>查看可配置项</td></tr>
+                <tr><td>读取参数</td><td><code>ros2 param get /patrol_server allow</code></td><td>确认当前值和类型</td></tr>
+                <tr><td>设置参数</td><td><code>ros2 param set /patrol_server allow false</code></td><td>运行时改变行为</td></tr>
+                <tr><td>列出包</td><td><code>ros2 pkg list</code></td><td>判断工作空间是否已 source</td></tr>
+                <tr><td>列出包内入口</td><td><code>ros2 pkg executables patrol_service_demo</code></td><td>核对 <code>ros2 run</code> 的第二个参数</td></tr>
+                <tr><td>运行节点</td><td><code>ros2 run patrol_service_demo patrol_server</code></td><td>包名 + 可执行程序名</td></tr>
+                <tr><td>只构建指定包</td><td><code>colcon build --packages-select chapt4_interfaces</code></td><td>快速验证单个包</td></tr>
+                <tr><td>运行测试</td><td><code>colcon test --packages-select patrol_service_demo</code></td><td>代码改动后回归检查</td></tr>
+                <tr><td>查看测试结果</td><td><code>colcon test-result --verbose</code></td><td>测试失败时找原因</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>最值得形成肌肉记忆的 source 顺序</h3>
+          <div class="code">
+            <div class="code-head"><span>每个新终端</span><button class="copy">复制</button></div>
+            <pre><code><span class="kw">source</span> /opt/ros/humble/setup.bash
+<span class="kw">source</span> /home/yezi/ROS2/chapt4/chapt4_ws/install/setup.bash</code></pre>
+          </div>
+          <p>第一行是 underlay（系统安装的 Humble），第二行是 overlay（你自己的工作空间）。后 source 的 overlay 可以增加或覆盖前者的资源。</p>
+        </section>
+
+        <section id="debug">
+          <div class="section-head">
+            <div class="section-no">12 / DEBUG</div>
+            <div>
+              <h2>故障排查与当前代码体检</h2>
+              <p class="section-intro">按现象找“最小可疑范围”，比反复删除 build 目录更有效。下面同时记录了对当前源码的实际观察。</p>
+            </div>
+          </div>
+
+          <details open>
+            <summary><code>Package 'patrol_service_demo' not found</code></summary>
+            <div>
+              <p>先执行 <code>source /opt/ros/humble/setup.bash</code> 和工作空间的 <code>source install/setup.bash</code>。若仍不存在，确认在 <code>chapt4_ws</code> 根目录成功执行过 <code>colcon build</code>。</p>
+            </div>
+          </details>
+          <details>
+            <summary><code>No executable found</code></summary>
+            <div>
+              <p>运行 <code>ros2 pkg executables patrol_service_demo</code>。检查 <code>setup.py</code> 中入口名称、模块路径和 <code>:main</code>，改过 <code>setup.py</code> 后要重新构建再 source。</p>
+            </div>
+          </details>
+          <details>
+            <summary>客户端一直输出 waiting</summary>
+            <div>
+              <p>先检查服务端是否仍在运行，再执行 <code>ros2 service list -t | grep patrol</code>。两边服务名必须解析一致，类型都必须是 <code>chapt4_interfaces/srv/PatrolTask</code>。不同机器还要检查 <code>ROS_DOMAIN_ID</code> 和网络发现。</p>
+            </div>
+          </details>
+          <details>
+            <summary><code>ModuleNotFoundError: chapt4_interfaces</code></summary>
+            <div>
+              <p>通常是接口包没构建或当前终端没加载 overlay。执行接口构建、source，然后用 <code>ros2 interface show...</code> 验证。Python 业务包的 <code>package.xml</code> 已正确声明 <code>&lt;depend&gt;chapt4_interfaces&lt;/depend&gt;</code>。</p>
+            </div>
+          </details>
+          <details>
+            <summary>CLI 服务调用提示字段或 YAML 错误</summary>
+            <div>
+              <p>先用 <code>ros2 interface show</code> 查看精确字段。请求必须是 YAML 映射，例如 <code>"{target_name: room_B}"</code>，字段名不能写成 <code>target</code>。</p>
+            </div>
+          </details>
+          <details>
+            <summary>修改 .srv 后行为没有变化</summary>
+            <div>
+              <p>接口是生成代码，必须重新构建依赖它的包并重新 source。最直接的方式是回到工作空间运行 <code>colcon build --symlink-install</code>，然后在所有终端重新 source，并重启节点。</p>
+            </div>
+          </details>
+
+          <h3>当前源码中值得留意的点</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>位置</th><th>观察</th><th>影响</th><th>建议</th></tr></thead>
+              <tbody>
+                <tr><td><code>patrol_client.py</code></td><td><code>send_reauest</code> 拼写错误</td><td>目前调用一致，所以能运行；影响可读性</td><td>以后统一改为 <code>send_request</code></td></tr>
+                <tr><td><code>patrol_server.py</code></td><td>Humble 下 SIGINT 后又执行 <code>rclpy.shutdown()</code></td><td>实测服务正常，但退出时可能报 <code>shutdown already called</code></td><td>显式销毁节点，并用 <code>rclpy.try_shutdown()</code> 做幂等清理</td></tr>
+                <tr><td><code>parameter_event_watcher.py</code></td><td>finally 内缩进过深</td><td>Python 仍可解析，但风格检查可能报错</td><td>把 <code>rclpy.shutdown()</code> 对齐到 8 个空格</td></tr>
+                <tr><td><code>remote_param_setter.py</code></td><td>空行、空格和缩进不统一</td><td>功能逻辑明确，但 flake8 可能失败</td><td>按 PEP 8 格式化</td></tr>
+                <tr><td>两个 <code>package.xml</code></td><td>description / license 仍为 TODO</td><td>学习运行不受影响，发布质量不完整</td><td>补真实描述和许可证</td></tr>
+                <tr><td>工作空间</td><td>没有 launch 文件</td><td>需手动开多个终端</td><td>下一步可加 launch.py 一键启动</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="callout warn">
+            <strong>不要把所有错误都归因于“ROS 缓存”</strong>
+            <p>优先确认包名、入口名、节点名、服务名、类型和 source。只有生成产物确实异常时，才有针对性地清理当前工作空间的 <code>build/ install/ log/</code>；清理会触发完整重建。</p>
+          </div>
+        </section>
+
+        <section id="practice">
+          <div class="section-head">
+            <div class="section-no">13 / PRACTICE</div>
+            <div>
+              <h2>练习与自测</h2>
+              <p class="section-intro">真正掌握的标志不是“看懂了”，而是能预测输出、改变行为，并在没有教程时重建最小版本。</p>
+            </div>
+          </div>
+
+          <h3>建议按难度完成</h3>
+          <ul class="checklist">
+            <li>用 CLI 把目标改成 <code>charging_station</code></li>
+            <li>把 <code>allow</code> 设为 false，预测并验证响应</li>
+            <li>尝试把 <code>robot_name</code> 设为空，观察拒绝原因</li>
+            <li>启动参数监听器，记录一次 changed event</li>
+            <li>给请求新增 <code>int32 priority</code> 并完成全链路修改</li>
+            <li>写一个 launch 文件同时启动 server 和 watcher</li>
+          </ul>
+
+          <div class="quiz" data-answer="b">
+            <p>1. <code>PatrolTask.srv</code> 中 <code>---</code> 上方由谁填写？</p>
+            <label><input type="radio" name="q1" value="a"> 服务端</label>
+            <label><input type="radio" name="q1" value="b"> 客户端</label>
+            <label><input type="radio" name="q1" value="c"> colcon</label>
+            <div class="quiz-result"></div>
+          </div>
+          <div class="quiz" data-answer="c">
+            <p>2. 修改 <code>.srv</code> 后，哪一步不可省略？</p>
+            <label><input type="radio" name="q2" value="a"> 重启电脑</label>
+            <label><input type="radio" name="q2" value="b"> 修改 DDS 源码</label>
+            <label><input type="radio" name="q2" value="c"> 重新构建、source 并重启节点</label>
+            <div class="quiz-result"></div>
+          </div>
+          <div class="quiz" data-answer="a">
+            <p>3. 任务耗时长、要反馈进度且可取消，优先选什么？</p>
+            <label><input type="radio" name="q3" value="a"> Action</label>
+            <label><input type="radio" name="q3" value="b"> Parameter</label>
+            <label><input type="radio" name="q3" value="c"> 普通 Service</label>
+            <div class="quiz-result"></div>
+          </div>
+
+          <div class="big-answer">
+            <small>离开本页前，请确认你能复述</small>
+            <p><code>.srv</code> 定合同，Server 填 Response，Client 发 Request，<code>spin</code> 驱动回调，<code>source</code> 让终端发现构建结果。</p>
+          </div>
+        </section>
+
+        <footer class="footer">
+          <a class="back-top" href="#top">回到顶部 ↑</a>
+          <b>ROS 2 巡逻服务解剖课</b><br>
+          基于当前 chapt4_ws 源码生成 · 目标环境：ROS 2 Humble / Python 3.10
+        </footer>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    (() => {
+      const sections = [...document.querySelectorAll("main section[id]")];
+      const links = [...document.querySelectorAll(".nav a")];
+      const progressBar = document.getElementById("progressBar");
+      const progressText = document.getElementById("progressText");
+      const mobileSelect = document.getElementById("mobileSelect");
+
+      const updateProgress = () => {
+        const max = document.documentElement.scrollHeight - innerHeight;
+        const value = max > 0 ? Math.min(100, Math.round(scrollY / max * 100)) : 0;
+        progressBar.style.width = value + "%";
+        progressText.textContent = value + "%";
+
+        let current = sections[0]?.id;
+        for (const section of sections) {
+          if (section.getBoundingClientRect().top <= innerHeight * .32) current = section.id;
+        }
+        links.forEach(link => link.classList.toggle("active", link.hash === "#" + current));
+        if (current) mobileSelect.value = "#" + current;
+      };
+
+      document.addEventListener("scroll", updateProgress, { passive: true });
+      addEventListener("resize", updateProgress);
+      updateProgress();
+
+      mobileSelect.addEventListener("change", event => {
+        document.querySelector(event.target.value)?.scrollIntoView({ behavior: "smooth" });
+      });
+
+      document.querySelectorAll(".copy").forEach(button => {
+        button.addEventListener("click", async () => {
+          const code = button.closest(".code").querySelector("code").innerText;
+          try {
+            await navigator.clipboard.writeText(code);
+            button.textContent = "已复制";
+          } catch {
+            const range = document.createRange();
+            range.selectNodeContents(button.closest(".code").querySelector("code"));
+            const selection = getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            button.textContent = "已选中";
+          }
+          setTimeout(() => button.textContent = "复制", 1300);
+        });
+      });
+
+      document.querySelectorAll(".quiz").forEach(quiz => {
+        quiz.addEventListener("change", event => {
+          const result = quiz.querySelector(".quiz-result");
+          const correct = event.target.value === quiz.dataset.answer;
+          result.textContent = correct ? "✓ 回答正确" : "再想想：回到对应章节找线索。";
+          result.style.color = correct ? "var(--forest)" : "var(--red)";
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

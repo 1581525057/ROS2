@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>action_interfaces</name>
+  <version>0.0.0</version>
+  <description>TODO: Package description</description>
+  <maintainer email="yezi@todo.todo">yezi</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- 代码接口生成武器 -->
+  <buildtool_depend>rosidl_default_generators</buildtool_depend>
+  <!-- 负责让生成后的接口在运行时“可用” -->
+  <exec_depend>rosidl_default_runtime</exec_depend>
+  <!-- 声明我是接口包 -->
+  <member_of_group>rosidl_interface_packages</member_of_group> 
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

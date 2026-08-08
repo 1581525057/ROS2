@@ -1,0 +1,624 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="ROS 2 Humble Python Launch 从零到进阶：多节点、参数、Include、命名空间、YAML、条件启动与调试。">
+  <title>ROS 2 Launch · 从会运行到真正理解</title>
+  <style>
+    :root {
+      --bg: #08111f; --panel: #0e1a2c; --panel2: #13223a; --text: #e8eef8;
+      --muted: #9eb0c9; --line: #263958; --blue: #69a7ff; --cyan: #53d6d1;
+      --green: #65d69a; --orange: #ffbe66; --red: #ff7d8a; --purple: #ba9cff;
+      --code: #06101d; --shadow: 0 18px 60px rgba(0,0,0,.28); --radius: 18px;
+    }
+    html[data-theme="light"] {
+      --bg: #f5f8fc; --panel: #fff; --panel2: #edf3fb; --text: #152238;
+      --muted: #52657f; --line: #d6e0ee; --blue: #1769d3; --cyan: #087e86;
+      --green: #147a4a; --orange: #9b5a00; --red: #c53445; --purple: #6c49bb;
+      --code: #101a28; --shadow: 0 18px 50px rgba(31,57,88,.12);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 82px; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.75 system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif; }
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code { font-family: "Cascadia Code","JetBrains Mono",Consolas,monospace; }
+    :not(pre)>code { color: var(--cyan); background: color-mix(in srgb,var(--cyan) 10%,transparent); padding: .12em .38em; border-radius: 6px; }
+    .progress { position: fixed; z-index: 99; inset: 0 auto auto 0; width: 0; height: 3px; background: linear-gradient(90deg,var(--blue),var(--cyan),var(--purple)); }
+    .topbar { position: sticky; top: 0; z-index: 50; height: 64px; display: flex; align-items: center; gap: 14px; padding: 0 22px; backdrop-filter: blur(16px); background: color-mix(in srgb,var(--bg) 80%,transparent); border-bottom: 1px solid var(--line); }
+    .brand { font-weight: 800; letter-spacing: .02em; white-space: nowrap; }
+    .brand span { color: var(--cyan); }
+    .search { flex: 1; max-width: 560px; margin-left: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--text); padding: 9px 12px; outline: none; }
+    .search:focus { border-color: var(--blue); box-shadow: 0 0 0 3px color-mix(in srgb,var(--blue) 18%,transparent); }
+    .icon-btn { border: 1px solid var(--line); background: var(--panel); color: var(--text); border-radius: 10px; padding: 8px 11px; cursor: pointer; }
+    .layout { display: grid; grid-template-columns: 280px minmax(0,1fr); max-width: 1500px; margin: auto; }
+    aside { position: sticky; top: 64px; height: calc(100vh - 64px); overflow: auto; border-right: 1px solid var(--line); padding: 24px 18px; }
+    aside .label { color: var(--muted); font-size: .75rem; text-transform: uppercase; letter-spacing: .14em; margin: 12px 10px 8px; }
+    aside a { display: block; color: var(--muted); padding: 7px 10px; margin: 2px 0; border-radius: 8px; font-size: .91rem; }
+    aside a:hover,aside a.active { color: var(--text); background: var(--panel2); text-decoration: none; }
+    main { min-width: 0; max-width: 1080px; padding: 50px 48px 120px; }
+    .hero { position: relative; overflow: hidden; padding: 46px; border: 1px solid var(--line); border-radius: 26px; background: radial-gradient(circle at 90% 10%,rgba(83,214,209,.16),transparent 38%),linear-gradient(135deg,var(--panel),var(--panel2)); box-shadow: var(--shadow); }
+    .hero:after { content: "launch"; position: absolute; right: -8px; bottom: -44px; font-size: 9rem; font-weight: 900; color: color-mix(in srgb,var(--blue) 7%,transparent); pointer-events: none; }
+    .eyebrow { color: var(--cyan); font-weight: 750; letter-spacing: .12em; text-transform: uppercase; font-size: .78rem; }
+    h1 { margin: 10px 0 14px; font-size: clamp(2.2rem,5vw,4.4rem); line-height: 1.08; letter-spacing: -.045em; }
+    h2 { margin: 76px 0 20px; font-size: clamp(1.75rem,3vw,2.45rem); line-height: 1.2; letter-spacing: -.025em; }
+    h3 { margin: 38px 0 12px; font-size: 1.28rem; }
+    h4 { margin: 26px 0 8px; color: var(--cyan); }
+    p { margin: 10px 0 18px; }
+    .lead { color: var(--muted); max-width: 760px; font-size: 1.12rem; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+    .chip { border: 1px solid var(--line); background: color-mix(in srgb,var(--panel) 75%,transparent); border-radius: 999px; padding: 6px 11px; font-size: .86rem; }
+    .grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; margin: 22px 0; }
+    .card { padding: 20px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+    .card .num { color: var(--cyan); font: 800 1.8rem/1 monospace; }
+    .card h3 { margin: 12px 0 6px; }
+    .card p { color: var(--muted); margin: 0; font-size: .94rem; }
+    .callout { margin: 22px 0; padding: 16px 18px; border: 1px solid var(--line); border-left: 4px solid var(--blue); border-radius: 10px; background: var(--panel); }
+    .callout strong { color: var(--blue); }
+    .callout.good { border-left-color: var(--green); }.callout.good strong { color: var(--green); }
+    .callout.warn { border-left-color: var(--orange); }.callout.warn strong { color: var(--orange); }
+    .callout.danger { border-left-color: var(--red); }.callout.danger strong { color: var(--red); }
+    .codebox { position: relative; margin: 16px 0 24px; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--code); box-shadow: 0 8px 28px rgba(0,0,0,.16); }
+    .codehead { display: flex; align-items: center; min-height: 42px; padding: 7px 10px 7px 15px; color: #aebdd0; background: #101d2c; border-bottom: 1px solid #24344a; font: .82rem/1.4 monospace; }
+    .codehead .dot { width: 9px; height: 9px; border-radius: 50%; background: #ff6b6b; margin-right: 6px; box-shadow: 15px 0 #ffd166,30px 0 #63d28f; }
+    .codehead .path { margin-left: 34px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .copy { margin-left: auto; background: #192a40; border: 1px solid #344762; color: #cbd7e6; padding: 5px 9px; border-radius: 7px; cursor: pointer; }
+    pre { margin: 0; padding: 18px; overflow: auto; color: #dbe7f5; font: 13.5px/1.66 "Cascadia Code","JetBrains Mono",Consolas,monospace; tab-size: 4; }
+    .k { color: #ff8fbb; }.s { color: #a8dc76; }.c { color: #71849e; }.fn { color: #78b9ff; }.n { color: #c5a3ff; }
+    .diagram { margin: 24px 0; padding: 24px; border: 1px solid var(--line); border-radius: var(--radius); background: linear-gradient(145deg,var(--panel),var(--panel2)); overflow: auto; }
+    .flow { min-width: 650px; display: flex; justify-content: center; align-items: center; gap: 14px; text-align: center; }
+    .node { min-width: 150px; padding: 14px; border: 1px solid var(--blue); border-radius: 12px; background: color-mix(in srgb,var(--blue) 9%,var(--panel)); }
+    .node small { display: block; color: var(--muted); }.arrow { color: var(--cyan); font-weight: 800; white-space: nowrap; }
+    .tree { color: #cdd9e8; }
+    .tree .dir { color: #78b9ff; }.tree .file { color: #a8dc76; }.tree .note { color: #71849e; }
+    table { width: 100%; border-collapse: collapse; margin: 18px 0 28px; display: block; overflow-x: auto; }
+    th,td { padding: 11px 13px; border: 1px solid var(--line); text-align: left; vertical-align: top; min-width: 130px; }
+    th { background: var(--panel2); color: var(--cyan); } td { background: var(--panel); }
+    details { margin: 12px 0; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+    summary { cursor: pointer; padding: 14px 17px; font-weight: 700; }
+    details>div { padding: 0 17px 15px; color: var(--muted); }
+    .checklist label { display: flex; gap: 10px; align-items: flex-start; margin: 9px 0; }
+    .checklist input { margin-top: 7px; accent-color: var(--cyan); }
+    .term { display: inline-block; min-width: 70px; padding: 2px 7px; color: var(--bg); background: var(--cyan); border-radius: 5px; font-size: .78rem; font-weight: 800; }
+    .output { color: #a8dc76; }
+    .quiz button { border: 1px solid var(--line); color: var(--text); background: var(--panel2); border-radius: 9px; padding: 8px 12px; margin: 5px; cursor: pointer; }
+    .quiz button:hover { border-color: var(--blue); }
+    .quiz-result { min-height: 28px; color: var(--cyan); font-weight: 700; }
+    .footer { margin-top: 80px; padding-top: 26px; border-top: 1px solid var(--line); color: var(--muted); }
+    .hide-by-search { display: none !important; }
+    @media (max-width: 960px) { .layout { grid-template-columns: 1fr; } aside { display:none; } main { padding:32px 20px 90px; } .grid { grid-template-columns:1fr; } .hero { padding:30px 24px; } .search { max-width:none; } }
+    @media print { .topbar,aside,.progress,.copy { display:none!important; } .layout{display:block}.hero,.card,.callout,.diagram,details{box-shadow:none;break-inside:avoid} main{max-width:none;padding:0} body{background:#fff;color:#111} }
+  </style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<header class="topbar">
+  <div class="brand">ROS 2 <span>Launch Lab</span></div>
+  <input id="search" class="search" type="search" placeholder="搜索：LaunchConfiguration、namespace、报错……" aria-label="搜索教程">
+  <button id="theme" class="icon-btn" title="切换明暗主题">☀︎</button>
+</header>
+<div class="layout">
+<aside>
+  <div class="label">开始</div>
+  <a href="#top">课程目标</a><a href="#quick">60 秒跑起来</a><a href="#model">心智模型</a><a href="#project">项目地图</a>
+  <div class="label">三阶段实战</div>
+  <a href="#lesson1">1 · 启动多个节点</a><a href="#lesson2">2 · 传递参数</a><a href="#lesson3">3 · 进阶编排</a>
+  <div class="label">真正掌握</div>
+  <a href="#complete">完整文件索引</a><a href="#fromzero">从零手写</a><a href="#debug">排错决策树</a><a href="#cli">CLI 速查</a><a href="#quiz">自测与练习</a>
+</aside>
+<main id="top">
+  <section class="hero searchable">
+    <div class="eyebrow">ROS 2 Humble · Python · 离线实验课</div>
+    <h1>Launch<br>从会运行到真正理解</h1>
+    <p class="lead">你会用一条命令启动多个节点；让命令行参数流入节点参数；再用 Include、命名空间、YAML 和条件启动，把散乱的节点组织成可复用的机器人系统。</p>
+    <div class="chips"><span class="chip">✓ 配套代码已构建验证</span><span class="chip">✓ 全部命令可复制</span><span class="chip">✓ 单文件离线阅读</span><span class="chip">✓ 面向初学者</span></div>
+  </section>
+
+  <section class="searchable">
+    <h2>学完后，你能独立完成什么？</h2>
+    <div class="grid">
+      <article class="card"><div class="num">01</div><h3>一键启动</h3><p>把服务端、客户端等多个节点放进一份启动描述，不再开很多终端逐个 ros2 run。</p></article>
+      <article class="card"><div class="num">02</div><h3>运行时配置</h3><p>通过 robot_name:=... 把 launch 参数传给 ROS 节点参数，理解二者的区别和连接方式。</p></article>
+      <article class="card"><div class="num">03</div><h3>系统级编排</h3><p>复用其他 launch、隔离命名空间、加载 YAML，并按条件启停可选节点。</p></article>
+    </div>
+    <div class="callout good"><strong>最终可观察效果：</strong>服务端接受巡逻目标，客户端打印响应；进阶启动时节点进入 <code>/floor_1</code>，远程参数节点把机器人名改成“叶子无敌”。</div>
+  </section>
+
+  <section id="quick" class="searchable">
+    <h2>60 秒跑起来</h2>
+    <p>先跑通，再拆解。下面都是 <span class="term">Shell</span> 命令，不要写进 Python 文件。</p>
+    <div class="codebox"><div class="codehead"><span class="dot"></span><span class="path">终端 1 · 构建工作区</span><button class="copy">复制</button></div><pre><code>cd ~/ROS2/chapt4/chapt4_service
+source /opt/ros/$ROS_DISTRO/setup.bash
+colcon build --packages-select service_interfaces patrol_service__demo
+source install/setup.bash
+ros2 launch patrol_service__demo 01_multiple_nodes.launch.py</code></pre></div>
+    <p><code>$ROS_DISTRO</code> 是环境变量，在当前机器上是 <code>humble</code>。Shell 会自动把它替换成 Humble。</p>
+    <div class="codebox"><div class="codehead"><span class="dot"></span><span class="path">预期看到的关键日志</span><button class="copy">复制</button></div><pre><code class="output">[patrol_server-1] [INFO] [servzer_node]: 启动服务端
+[partom_client-2] [INFO] [patrol_client]: accept:True
+[partom_client-2] [INFO] [patrol_client]: message:robot-01接受任务地点到room-A</code></pre></div>
+    <div class="callout warn"><strong>每个新终端都要 source：</strong>先加载 <code>/opt/ros/$ROS_DISTRO/setup.bash</code>，再加载当前工作区的 <code>install/setup.bash</code>。后者没有执行时，ROS 2 找不到你刚构建的包。</div>
+  </section>
+
+  <section id="model" class="searchable">
+    <h2>先建立正确的心智模型</h2>
+    <p>Launch 像“舞台导演”。节点是演员，参数是演员拿到的剧本设定，命名空间是不同舞台的房间号，条件则决定某个演员今天是否出场。</p>
+    <table><thead><tr><th>概念</th><th>准确含义</th><th>本项目实例</th></tr></thead><tbody>
+      <tr><td>工作区 workspace</td><td>包含 src、build、install、log 的工程目录</td><td><code>chapt4_service</code></td></tr>
+      <tr><td>功能包 package</td><td>ROS 2 分发与发现代码的最小单位</td><td><code>patrol_service__demo</code></td></tr>
+      <tr><td>节点 node</td><td>参与 ROS 图的独立进程/组件</td><td><code>servzer_node</code>、<code>patrol_client</code></td></tr>
+      <tr><td>服务 service</td><td>一问一答的同步语义通信</td><td><code>partrol_service</code></td></tr>
+      <tr><td>接口 interface</td><td>通信数据结构的契约</td><td><code>service_interfaces/srv/Patrol</code></td></tr>
+      <tr><td>节点参数 parameter</td><td>属于某个节点、运行时可查询或修改的配置</td><td><code>robot_name</code>、<code>allow_task</code></td></tr>
+      <tr><td>Launch 参数</td><td>启动文件自身接收的输入，本质先是字符串替换</td><td><code>robot_name:=xiaoye</code></td></tr>
+      <tr><td>Launch action</td><td>启动系统要执行的动作</td><td><code>Node</code>、<code>GroupAction</code></td></tr>
+      <tr><td>Substitution</td><td>启动执行时才求值的占位符</td><td><code>LaunchConfiguration</code></td></tr>
+    </tbody></table>
+    <div class="callout"><strong>最关键的区别：</strong><code>DeclareLaunchArgument</code> 声明的是 launch 的输入；只有把 <code>LaunchConfiguration(...)</code> 放进 <code>Node(parameters=[...])</code>，这个输入才真正成为节点参数。</div>
+    <p>话题像广播，服务像问答，动作像能汇报进度并取消的长任务。Launch 不替代它们；Launch 只负责把使用这些通信方式的节点组织并启动起来。</p>
+  </section>
+
+  <section id="project" class="searchable">
+    <h2>项目地图：启动时到底发生了什么</h2>
+    <div class="diagram"><div class="flow">
+      <div class="node"><strong>patrol_client</strong><small>读取 target_name</small></div><div class="arrow">请求 →<br><small>partrol_service</small></div>
+      <div class="node"><strong>servzer_node</strong><small>读取 robot_name / allow_task</small></div><div class="arrow">← 修改参数</div>
+      <div class="node"><strong>remote_param</strong><small>调用 set_parameters</small></div>
+    </div></div>
+    <div class="codebox"><div class="codehead"><span class="dot"></span><span class="path">完整目录树</span><button class="copy">复制</button></div><pre class="tree"><code>chapt4_service/
+├── <span class="dir">src/service_interfaces/</span>              <span class="note"># 接口包：ament_cmake</span>
+│   ├── <span class="file">CMakeLists.txt</span>
+│   ├── <span class="file">package.xml</span>
+│   └── srv/<span class="file">Patrol.srv</span>
+└── <span class="dir">src/patrol_service__demo/</span>            <span class="note"># Python 节点包：ament_python</span>
+    ├── <span class="file">package.xml</span>
+    ├── <span class="file">setup.py</span>
+    ├── <span class="file">setup.cfg</span>
+    ├── resource/<span class="file">patrol_service__demo</span>
+    ├── patrol_service__demo/
+    │   ├── <span class="file">__init__.py</span>
+    │   ├── <span class="file">patrol_server.py</span>
+    │   ├── <span class="file">patrol_client.py</span>
+    │   └── <span class="file">remote_param.py</span>
+    ├── launch/
+    │   ├── <span class="file">01_multiple_nodes.launch.py</span>
+    │   ├── <span class="file">02_launch_arguments.launch.py</span>
+    │   └── <span class="file">03_advanced.launch.py</span>
+    ├── config/<span class="file">patrol_params.yaml</span>
+    └── docs/<span class="file">launch_tutorial.html</span></code></pre></div>
+    <div class="callout warn"><strong>项目中的历史拼写：</strong>可执行文件注册名是 <code>partom_client</code>，服务名是 <code>partrol_service</code>，服务端节点名是 <code>servzer_node</code>。这些虽然不像标准英文，但 launch 必须与真实注册名完全一致。本教程忠实使用现状，避免“教程看似正确、实际却启动失败”。</div>
+  </section>
+
+  <section id="lesson1" class="searchable">
+    <h2>第一课：用一个 launch 启动多个节点</h2>
+    <p>手动方式需要两个终端分别执行 <code>ros2 run</code>。Launch 把这两条启动意图写成一份可版本管理的 Python 描述。</p>
+    <div class="codebox"><div class="codehead"><span class="dot"></span><span class="path">launch/01_multiple_nodes.launch.py</span><button class="copy">复制</button></div><pre><code>"""第一课：一个 launch 同时启动服务端和客户端。"""
+
+from launch import LaunchDescription
+from launch_ros.actions import Node
+
+
+def generate_launch_description():
+    return LaunchDescription([
+        Node(
+            package='patrol_service__demo',
+            executable='patrol_server',
+            name='servzer_node',
+            output='screen',
+        ),
+        Node(
+            package='patrol_service__demo',
+            executable='partom_client',
+            name='patrol_client',
+            output='screen',
+        ),
+    ])</code></pre></div>
+    <h3>逐块理解</h3>
+    <table><thead><tr><th>代码</th><th>作用</th><th>常见误解</th></tr></thead><tbody>
+      <tr><td><code>generate_launch_description()</code></td><td>ROS 2 launch 查找并调用的固定入口</td><td>名字不能随便改</td></tr>
+      <tr><td><code>LaunchDescription([...])</code></td><td>收集要执行的 actions</td><td>它不是节点，本身不参与 ROS 通信</td></tr>
+      <tr><td><code>Node(package=...)</code></td><td>描述一个 ROS 节点进程</td><td>package 是包名，不是 Python 模块路径</td></tr>
+      <tr><td><code>executable=...</code></td><td>对应 setup.py 的 console_scripts 左侧名称</td><td>不是 Python 文件名</td></tr>
+      <tr><td><code>name=...</code></td><td>覆盖节点代码里的默认节点名</td><td>它不改变 executable</td></tr>
+      <tr><td><code>output='screen'</code></td><td>把日志显示在启动终端</td><td>调试初期建议保留</td></tr>
+    </tbody></table>
+    <div class="codebox"><div class="codehead"><span class="dot"></span><span class="path">终端 1 · 运行</span><button class="copy">复制</button></div><pre><code>source /opt/ros/$ROS_DISTRO/setup.bash
+source install/setup.bash
+ros2 launch patrol_service__demo 01_multiple_nodes.launch.py</code></pre></div>
+    <div class="codebox"><div class="codehead"><span class="dot"></span><span class="path">终端 2 · 观察（只读命令）</span><button class="copy">复制</button></div><pre><code>source /opt/ros/$ROS_DISTRO/setup.bash
+source install/setup.bash
+ros2 node list
+ros2 service list -t
+ros2 node info /servzer_node</code></pre></div>
+    <div class="callout good"><strong>本章成功标准：</strong>终端 1 出现 <code>accept:True</code>；终端 2 至少能看到 <code>/servzer_node</code>。客户端发完一次请求就正常退出，因此你稍晚执行 <code>ros2 node list</code> 时可能看不到客户端——这是预期行为。</div>
+    <details><summary>为什么客户端可以和服务端“同时启动”？会不会抢跑？</summary><div>两个进程的启动先后不能被简单假定。但客户端的 <code>wait_for_service(1.0)</code> 会反复等待服务出现，所以即使客户端先启动，也不会立即调用失败。这是节点代码自身的健壮性，不能只依赖 launch 文件中的书写顺序。</div></details>
+  </section>
+
+  <section id="lesson2" class="searchable">
+    <h2>第二课：使用 launch 传递参数</h2>
+    <p>目标是让同一个启动文件适应不同机器人和任务地点，而不是每次修改 Python 源码。</p>
+    <div class="diagram"><div class="flow">
+      <div class="node"><strong>命令行</strong><small>robot_name:=xiaoye</small></div><div class="arrow">→</div>
+      <div class="node"><strong>LaunchArgument</strong><small>声明输入</small></div><div class="arrow">→</div>
+      <div class="node"><strong>LaunchConfiguration</strong><small>运行时取值</small></div><div class="arrow">→</div>
+      <div class="node"><strong>Node parameters</strong><small>节点参数</small></div>
+    </div></div>
+    <div class="codebox"><div class="codehead"><span class="dot"></span><span class="path">launch/02_launch_arguments.launch.py</span><button class="copy">复制</button></div><pre><code>"""第二课：用 ros2 launch 的命令行参数配置节点。"""
+
+from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
+
+
+def generate_launch_description():
+    robot_name = LaunchConfiguration('robot_name')
+    allow_task = LaunchConfiguration('allow_task')
+    target_name = LaunchConfiguration('target_name')
+
+    return LaunchDescription([
+        DeclareLaunchArgument(
+            'robot_name', default_value='robot-01', description='服务机器人名称'),
+        DeclareLaunchArgument(
+            'allow_task', default_value='true', description='是否接受巡逻任务'),
+        DeclareLaunchArgument(
+            'target_name', default_value='room-A', description='客户端请求的目标地点'),
+        Node(
+            package='patrol_service__demo',
+            executable='patrol_server',
+            name='servzer_node',
+            output='screen',
+            parameters=[{
+                'robot_name': robot_name,
+                'allow_task': allow_task,
+            }],
+        ),
+        Node(
+            package='patrol_service__demo',
+            executable='partom_client',
+            name='patrol_client',
+            output='screen',
+            parameters=[{'target_name': target_name}],
+        ),
+    ])</code></pre></div>
+    <h3>先看参数清单，再运行</h3>
+    <div class="codebox"><div class="codehead"><span class="dot"></span><span class="path">终端 · 查询和传参</span><button class="copy">复制</button></div><pre><code># 查看：不会启动节点
+ros2 launch patrol_service__demo 02_launch_arguments.launch.py --show-args
+
+# 改变系统：启动节点，并覆盖三个默认值
+ros2 launch patrol_service__demo 02_launch_arguments.launch.py \
+  robot_name:=xiaoye \
+  allow_task:=false \
+  target_name:=lab-A</code></pre></div>
+    <p>预期响应是 <code>accept:False</code> 和“不允许接受任务”。因为 launch 把 <code>false</code> 交给服务端的 <code>allow_task</code> 参数。</p>
+    <table><thead><tr><th>不传参时</th><th>传参时</th><th>流向</th></tr></thead><tbody>
+      <tr><td><code>robot-01</code></td><td><code>xiaoye</code></td><td>服务端 <code>robot_name</code></td></tr>
+      <tr><td><code>true</code></td><td><code>false</code></td><td>服务端 <code>allow_task</code></td></tr>
+      <tr><td><code>room-A</code></td><td><code>lab-A</code></td><td>客户端 <code>target_name</code></td></tr>
+    </tbody></table>
+    <div class="callout"><strong>延迟求值：</strong><code>LaunchConfiguration('robot_name')</code> 不是立刻读取字符串。它是一个 substitution，占位到 launch 真正执行时才取得当前上下文中的值。</div>
+    <div class="callout warn"><strong>布尔参数写法：</strong>命令行使用 <code>allow_task:=true</code> 或 <code>false</code>，不要加 Python 引号。ROS 参数解析会根据节点已声明的类型将它交给布尔参数。</div>
+    <h3>运行时验证参数</h3>
+    <p>客户端很快退出，因此另开终端查询仍在运行的服务端：</p>
+    <div class="codebox"><div class="codehead"><span class="dot"></span><span class="path">终端 2 · 参数检查</span><button class="copy">复制</button></div><pre><code>ros2 param list /servzer_node
+ros2 param get /servzer_node robot_name
+ros2 param get /servzer_node allow_task
+
+# 下面会改变正在运行的系统
+ros2 param set /servzer_node robot_name patrol-007</code></pre></div>
+    <div class="callout good"><strong>本章成功标准：</strong><code>--show-args</code> 能看到三个参数及默认值；传入 <code>allow_task:=false</code> 后客户端收到拒绝响应。</div>
+  </section>
+
+  <section id="lesson3" class="searchable">
+    <h2>第三课：Launch 进阶编排</h2>
+    <p>当系统变大，关键不再是“多写几个 Node”，而是复用、隔离、配置和按需组合。</p>
+    <div class="codebox"><div class="codehead"><span class="dot"></span><span class="path">launch/03_advanced.launch.py</span><button class="copy">复制</button></div><pre><code>"""第三课：包含其他 launch、命名空间、YAML 参数和条件启动。"""
+
+from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument, GroupAction, IncludeLaunchDescription
+from launch.conditions import IfCondition
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch_ros.actions import Node, PushRosNamespace
+from launch_ros.substitutions import FindPackageShare
+
+
+def generate_launch_description():
+    package_share = FindPackageShare('patrol_service__demo')
+    namespace = LaunchConfiguration('namespace')
+    start_remote_param = LaunchConfiguration('start_remote_param')
+    params_file = LaunchConfiguration('params_file')
+
+    base_launch = PathJoinSubstitution([
+        package_share, 'launch', '02_launch_arguments.launch.py'])
+    default_params = PathJoinSubstitution([
+        package_share, 'config', 'patrol_params.yaml'])
+
+    return LaunchDescription([
+        DeclareLaunchArgument(
+            'namespace', default_value='floor_1',
+            description='给本组节点加的命名空间'),
+        DeclareLaunchArgument(
+            'start_remote_param', default_value='true',
+            description='是否启动远程参数节点'),
+        DeclareLaunchArgument(
+            'params_file', default_value=default_params,
+            description='ROS 参数 YAML 文件'),
+        GroupAction([
+            PushRosNamespace(namespace),
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(base_launch),
+                launch_arguments={
+                    'robot_name': 'launch-robot',
+                    'allow_task': 'true',
+                    'target_name': 'loading-area',
+                }.items(),
+            ),
+            Node(
+                package='patrol_service__demo',
+                executable='remote_param',
+                name='remote_param',
+                output='screen',
+                parameters=[params_file],
+                condition=IfCondition(start_remote_param),
+            ),
+        ]),
+    ])</code></pre></div>
+    <h3>进阶机制 1：定位安装后的包</h3>
+    <p><code>FindPackageShare('patrol_service__demo')</code> 找到包安装后的 share 目录。不要硬编码 <code>/home/某用户/...</code>，否则换机器就失效。</p>
+    <p><code>PathJoinSubstitution</code> 把包路径、<code>launch</code>、文件名安全拼接，并保留 launch 的延迟求值能力。</p>
+    <h3>进阶机制 2：Include 复用启动文件</h3>
+    <p><code>IncludeLaunchDescription</code> 把第二课整体当成一个子模块，同时通过 <code>launch_arguments={...}.items()</code> 给子 launch 传值。大型机器人通常会把相机、导航、机械臂分别做成 launch，再由顶层 launch 组合。</p>
+    <h3>进阶机制 3：命名空间隔离</h3>
+    <div class="diagram"><div class="flow">
+      <div class="node"><strong>/floor_1</strong><small>/servzer_node<br>/patrol_client<br>/remote_param</small></div>
+      <div class="arrow">互不冲突</div>
+      <div class="node"><strong>/floor_2</strong><small>/servzer_node<br>/patrol_client<br>/remote_param</small></div>
+    </div></div>
+    <p><code>GroupAction</code> 创建一个作用域，<code>PushRosNamespace(namespace)</code> 让组内后续 action 都使用相同命名空间。这样可以运行两套相同节点而不重名。</p>
+    <div class="callout"><strong>为什么 remote_param.py 使用相对名？</strong>它连接的是 <code>servzer_node/set_parameters</code>，没有开头的 <code>/</code>。因此进入 <code>/floor_1</code> 后会自动解析为 <code>/floor_1/servzer_node/set_parameters</code>。若写成绝对名 <code>/servzer_node/set_parameters</code>，命名空间隔离就会失效。</div>
+    <h3>进阶机制 4：YAML 参数文件</h3>
+    <div class="codebox"><div class="codehead"><span class="dot"></span><span class="path">config/patrol_params.yaml</span><button class="copy">复制</button></div><pre><code>remote_param:
+  ros__parameters:
+    # 当前 remote_param.py 写死了要修改的两个远程参数。
+    # 此文件演示 launch 加载 YAML 的标准结构。
+    use_sim_time: false</code></pre></div>
+    <p>YAML 最外层通常是节点名，下一层必须是 <code>ros__parameters</code>。当前 YAML 只给 <code>remote_param</code> 设置其自身的 <code>use_sim_time</code>；它不会自动修改服务端。服务端的远程修改逻辑仍来自 <code>remote_param.py</code>。</p>
+    <div class="callout warn"><strong>别混淆两件事：</strong><code>parameters=[params_file]</code> 是“启动时给这个 Node 加载参数”；远程参数节点通过 <code>SetParameters</code> 服务去修改另一个正在运行的节点，这是另一条通信路径。</div>
+    <h3>进阶机制 5：条件启动</h3>
+    <p><code>condition=IfCondition(start_remote_param)</code> 表示只有值为真时才创建远程参数进程。传入 <code>false</code> 后，服务端和客户端仍启动，但远程参数节点不会出现。</p>
+    <div class="codebox"><div class="codehead"><span class="dot"></span><span class="path">三组实验</span><button class="copy">复制</button></div><pre><code># 实验 A：默认进阶启动
+ros2 launch patrol_service__demo 03_advanced.launch.py
+
+# 实验 B：换命名空间，并禁用远程参数节点
+ros2 launch patrol_service__demo 03_advanced.launch.py \
+  namespace:=floor_2 start_remote_param:=false
+
+# 实验 C：查看进阶 launch 暴露的全部参数
+ros2 launch patrol_service__demo 03_advanced.launch.py --show-args</code></pre></div>
+    <div class="callout good"><strong>本章成功标准：</strong>默认启动时日志节点名带 <code>floor_1.</code> 前缀，并出现两次“参数修改成功”；传 <code>start_remote_param:=false</code> 后不再启动 <code>remote_param</code>。</div>
+    <details><summary>更大型项目还会使用哪些 Launch 能力？</summary><div><code>TimerAction</code> 延时执行、<code>RegisterEventHandler</code> 监听进程退出、<code>OnProcessExit</code> 做退出后的动作、<code>SetEnvironmentVariable</code> 配置环境、<code>ExecuteProcess</code> 启动非 ROS 程序、<code>remappings</code> 改通信名称。先掌握本课四项，再按真实需求引入这些工具。</div></details>
+  </section>
+
+  <section id="complete" class="searchable">
+    <h2>完整文件索引：为什么每个文件都存在</h2>
+    <table><thead><tr><th>文件</th><th>职责</th><th>改后是否重建</th></tr></thead><tbody>
+      <tr><td><code>service_interfaces/srv/Patrol.srv</code></td><td>定义请求与响应字段</td><td>必须；接口会生成 Python 绑定</td></tr>
+      <tr><td><code>service_interfaces/CMakeLists.txt</code></td><td>调用 rosidl 生成接口</td><td>必须</td></tr>
+      <tr><td><code>service_interfaces/package.xml</code></td><td>声明接口包元数据与依赖</td><td>必须</td></tr>
+      <tr><td><code>patrol_service__demo/package.xml</code></td><td>声明 rclpy、接口、launch 等依赖</td><td>必须</td></tr>
+      <tr><td><code>setup.py</code></td><td>注册可执行文件，并安装 launch/YAML/HTML</td><td>必须</td></tr>
+      <tr><td><code>setup.cfg</code></td><td>让 ros2 run 在约定目录找到脚本</td><td>必须</td></tr>
+      <tr><td><code>launch/*.launch.py</code></td><td>描述启动系统</td><td>当前非 symlink 安装，需重建</td></tr>
+      <tr><td><code>config/*.yaml</code></td><td>保存参数配置</td><td>当前非 symlink 安装，需重建</td></tr>
+    </tbody></table>
+    <h3>setup.py 中最容易漏掉的安装规则</h3>
+    <div class="codebox"><div class="codehead"><span class="dot"></span><span class="path">setup.py · 关键片段</span><button class="copy">复制</button></div><pre><code>from glob import glob
+
+data_files=[
+    ('share/ament_index/resource_index/packages',
+        ['resource/' + package_name]),
+    ('share/' + package_name, ['package.xml']),
+    ('share/' + package_name + '/launch', glob('launch/*.launch.py')),
+    ('share/' + package_name + '/config', glob('config/*.yaml')),
+    ('share/' + package_name + '/docs', glob('docs/*.html')),
+]</code></pre></div>
+    <p>源码目录中存在 launch 文件还不够。<code>ros2 launch</code> 从安装空间的 package share 中查找它；没有 data_files 规则时，构建后仍会提示找不到 launch 文件。</p>
+    <h3>package.xml 的运行依赖</h3>
+    <div class="codebox"><div class="codehead"><span class="dot"></span><span class="path">package.xml · 关键片段</span><button class="copy">复制</button></div><pre><code>&lt;depend&gt;rclpy&lt;/depend&gt;
+&lt;depend&gt;service_interfaces&lt;/depend&gt;
+&lt;depend&gt;rcl_interfaces&lt;/depend&gt;
+&lt;exec_depend&gt;launch&lt;/exec_depend&gt;
+&lt;exec_depend&gt;launch_ros&lt;/exec_depend&gt;</code></pre></div>
+    <details><summary>为什么 Python 节点包没有 CMakeLists.txt？</summary><div><code>patrol_service__demo</code> 是 <code>ament_python</code> 包，构建和安装规则由 setup.py 管理。<code>service_interfaces</code> 需要 rosidl 生成接口，所以它是独立的 <code>ament_cmake</code> 包并拥有 CMakeLists.txt。把接口生成硬塞进纯 ament_python 包容易形成不可构建的结构。</div></details>
+  </section>
+
+  <section id="fromzero" class="searchable">
+    <h2>从零手写：按最小增量重建三节课</h2>
+    <p>不要一次粘贴所有代码。每一步只增加一个新概念，立刻验证。</p>
+    <h3>步骤 0：确认环境</h3>
+    <div class="codebox"><div class="codehead"><span class="dot"></span><span class="path">终端 · 只读检查</span><button class="copy">复制</button></div><pre><code>printenv ROS_DISTRO
+ros2 pkg prefix rclpy
+ros2 pkg list | grep -x patrol_service__demo
+ros2 pkg executables patrol_service__demo
+ros2 interface show service_interfaces/srv/Patrol</code></pre></div>
+    <p>应看到 <code>humble</code>、rclpy 的安装路径、当前包，以及 Patrol 的请求/响应字段。</p>
+    <h3>步骤 1：创建 launch 目录和第一个文件</h3>
+    <p>在源码包内创建 <code>launch/01_multiple_nodes.launch.py</code>，写入第一课完整代码。这里是 <span class="term">Python</span> 文件，不是在 Shell 中逐行执行。</p>
+    <h3>步骤 2：让 setup.py 安装 launch</h3>
+    <p>导入 <code>glob</code>，并在 <code>data_files</code> 加入 launch 匹配规则。构建后检查安装结果：</p>
+    <div class="codebox"><div class="codehead"><span class="dot"></span><span class="path">终端 · 构建与检查</span><button class="copy">复制</button></div><pre><code>colcon build --packages-select service_interfaces patrol_service__demo
+source install/setup.bash
+ls install/patrol_service__demo/share/patrol_service__demo/launch
+ros2 launch patrol_service__demo 01_multiple_nodes.launch.py</code></pre></div>
+    <h3>步骤 3：增加一个 launch 参数</h3>
+    <p>先只做 <code>robot_name</code>：导入 <code>DeclareLaunchArgument</code> 和 <code>LaunchConfiguration</code>，声明参数，把 substitution 放进服务端 <code>parameters</code>。运行：</p>
+    <div class="codebox"><div class="codehead"><span class="dot"></span><span class="path">终端 · 最小参数实验</span><button class="copy">复制</button></div><pre><code>ros2 launch patrol_service__demo 02_launch_arguments.launch.py \
+  robot_name:=my-first-robot</code></pre></div>
+    <p>确认成功后，再按同样模式加入 <code>allow_task</code> 和 <code>target_name</code>。这一步是在学习“输入—占位符—节点参数”的重复映射。</p>
+    <h3>步骤 4：引入 Include</h3>
+    <p>创建第三课文件，先只用 <code>FindPackageShare</code> + <code>PathJoinSubstitution</code> 找到第二课，再用 <code>IncludeLaunchDescription</code> 包含它。先运行验证，再继续。</p>
+    <h3>步骤 5：加入 namespace</h3>
+    <p>把 Include 放入 <code>GroupAction</code>，并在前面添加 <code>PushRosNamespace</code>。验证命名：</p>
+    <div class="codebox"><div class="codehead"><span class="dot"></span><span class="path">终端 2 · 查看 ROS 图</span><button class="copy">复制</button></div><pre><code>ros2 node list
+ros2 service list | grep floor_1
+ros2 node info /floor_1/servzer_node</code></pre></div>
+    <h3>步骤 6：加入 YAML 和条件</h3>
+    <p>创建 <code>config/patrol_params.yaml</code>，在 setup.py 安装 YAML；最后给远程参数节点加 <code>IfCondition</code>。分别用 true/false 运行并比较节点列表。</p>
+    <div class="checklist card">
+      <strong>动手完成后勾选（浏览器会记住）</strong>
+      <label><input type="checkbox" data-check="c1">我能解释 package、executable、name 三者区别</label>
+      <label><input type="checkbox" data-check="c2">我用一条 ros2 launch 命令启动了服务端和客户端</label>
+      <label><input type="checkbox" data-check="c3">我用 --show-args 查看了 launch 参数</label>
+      <label><input type="checkbox" data-check="c4">我传入 allow_task:=false 并看到了拒绝响应</label>
+      <label><input type="checkbox" data-check="c5">我验证了 /floor_1/servzer_node</label>
+      <label><input type="checkbox" data-check="c6">我能解释为什么相对名称支持 namespace</label>
+    </div>
+  </section>
+
+  <section id="debug" class="searchable">
+    <h2>排错决策树：不要靠猜</h2>
+    <div class="diagram"><pre><code>ros2 launch 失败
+│
+├─ 找不到 package？
+│  ├─ printenv ROS_DISTRO
+│  ├─ source /opt/ros/$ROS_DISTRO/setup.bash
+│  ├─ source install/setup.bash
+│  └─ ros2 pkg prefix patrol_service__demo
+│
+├─ 找不到 launch 文件？
+│  ├─ 检查 setup.py 的 data_files
+│  ├─ colcon build --packages-select patrol_service__demo
+│  └─ 检查 install/.../share/.../launch
+│
+├─ executable 不存在？
+│  ├─ ros2 pkg executables patrol_service__demo
+│  └─ 对照 setup.py 的 console_scripts 左侧名称
+│
+├─ 客户端一直等待？
+│  ├─ ros2 node list
+│  ├─ ros2 service list -t
+│  └─ 检查服务名与 namespace
+│
+└─ 参数没生效？
+   ├─ ros2 param list /节点全名
+   ├─ ros2 param get /节点全名 参数名
+   ├─ 检查 YAML 的 ros__parameters 层级
+   └─ 检查 launch 参数是否真的传入 Node(parameters=...)</code></pre></div>
+    <table><thead><tr><th>现象</th><th>高概率原因</th><th>修复</th></tr></thead><tbody>
+      <tr><td><code>Package ... not found</code></td><td>没构建或没 source overlay</td><td>重新构建并 source install/setup.bash</td></tr>
+      <tr><td><code>file ... was not found</code></td><td>launch 未被 setup.py 安装</td><td>检查 glob 规则，重建</td></tr>
+      <tr><td><code>executable ... not found</code></td><td>名字与 console_scripts 不一致</td><td>本项目必须写 <code>partom_client</code></td></tr>
+      <tr><td>节点在但服务找不到</td><td>绝对名/相对名或 namespace 不一致</td><td>用 <code>ros2 service list -t</code> 看解析后的全名</td></tr>
+      <tr><td>改了 launch 但行为没变</td><td>运行的是 install 中旧副本</td><td>重新 colcon build；开发时可用 <code>--symlink-install</code></td></tr>
+      <tr><td>接口导入失败</td><td>接口包未生成或环境混用</td><td>先构建接口包，source 同一工作区</td></tr>
+      <tr><td>YAML 参数不生效</td><td>节点名或缩进不匹配</td><td>确认节点键和 <code>ros__parameters</code></td></tr>
+    </tbody></table>
+    <div class="callout danger"><strong>环境混用：</strong>不要在同一个终端反复 source 不同 ROS 2 发行版或不相关工作区。出现诡异的接口类型错误时，开一个干净终端，只 source Humble 和本工作区。</div>
+  </section>
+
+  <section id="cli" class="searchable">
+    <h2>CLI 速查表</h2>
+    <table><thead><tr><th>目的</th><th>命令</th><th>查看/改变</th></tr></thead><tbody>
+      <tr><td>查看包位置</td><td><code>ros2 pkg prefix patrol_service__demo</code></td><td>查看</td></tr>
+      <tr><td>查看可执行文件</td><td><code>ros2 pkg executables patrol_service__demo</code></td><td>查看</td></tr>
+      <tr><td>查看 launch 参数</td><td><code>ros2 launch ... --show-args</code></td><td>查看</td></tr>
+      <tr><td>查看节点</td><td><code>ros2 node list</code></td><td>查看</td></tr>
+      <tr><td>查看节点详情</td><td><code>ros2 node info /floor_1/servzer_node</code></td><td>查看</td></tr>
+      <tr><td>查看服务与类型</td><td><code>ros2 service list -t</code></td><td>查看</td></tr>
+      <tr><td>查看接口</td><td><code>ros2 interface show service_interfaces/srv/Patrol</code></td><td>查看</td></tr>
+      <tr><td>直接调用服务</td><td><code>ros2 service call /partrol_service service_interfaces/srv/Patrol "{target_name: room-B}"</code></td><td>改变</td></tr>
+      <tr><td>列出节点参数</td><td><code>ros2 param list /servzer_node</code></td><td>查看</td></tr>
+      <tr><td>读取参数</td><td><code>ros2 param get /servzer_node robot_name</code></td><td>查看</td></tr>
+      <tr><td>修改参数</td><td><code>ros2 param set /servzer_node robot_name robot-88</code></td><td>改变</td></tr>
+    </tbody></table>
+    <div class="callout warn"><strong>有命名空间时要使用全名：</strong>进阶启动后的服务通常是 <code>/floor_1/partrol_service</code>，节点是 <code>/floor_1/servzer_node</code>。先用 list 查真实名称，再执行 info/get/call。</div>
+  </section>
+
+  <section id="quiz" class="searchable">
+    <h2>自测：你是真的懂了，还是只会复制？</h2>
+    <div class="quiz card" data-answer="b"><strong>1. executable 应该填写什么？</strong><br><button data-v="a">Python 文件名</button><button data-v="b">console_scripts 注册名</button><button data-v="c">节点运行时名称</button><p class="quiz-result"></p></div>
+    <div class="quiz card" data-answer="c"><strong>2. 哪一项把 launch 输入真正交给节点？</strong><br><button data-v="a">只有 DeclareLaunchArgument</button><button data-v="b">只有 LaunchConfiguration</button><button data-v="c">Node 的 parameters</button><p class="quiz-result"></p></div>
+    <div class="quiz card" data-answer="a"><strong>3. 为什么服务名尽量使用相对名？</strong><br><button data-v="a">可以跟随 namespace 解析</button><button data-v="b">运行速度更快</button><button data-v="c">不需要接口包</button><p class="quiz-result"></p></div>
+    <h3>进阶练习</h3>
+    <ol>
+      <li>给第二课增加 <code>service_name</code> launch 参数，并通过 <code>remappings</code> 同时重映射客户端和服务端。</li>
+      <li>复制一组 <code>GroupAction</code>，分别放进 <code>floor_1</code> 与 <code>floor_2</code>，观察同名节点如何共存。</li>
+      <li>把远程参数节点中写死的“叶子无敌”改为它自己的参数，再从 YAML 加载。</li>
+      <li>给客户端增加延迟参数，并尝试用 <code>TimerAction</code> 延迟 2 秒启动。</li>
+      <li>使用 <code>RegisterEventHandler</code> + <code>OnProcessExit</code>，在客户端退出时打印一条 launch 日志。</li>
+    </ol>
+  </section>
+
+  <section class="searchable">
+    <h2>最终验证清单</h2>
+    <div class="codebox"><div class="codehead"><span class="dot"></span><span class="path">终端 · 完整验证</span><button class="copy">复制</button></div><pre><code>cd ~/ROS2/chapt4/chapt4_service
+source /opt/ros/$ROS_DISTRO/setup.bash
+colcon build --packages-select service_interfaces patrol_service__demo
+source install/setup.bash
+ros2 interface show service_interfaces/srv/Patrol
+ros2 pkg executables patrol_service__demo
+ros2 launch patrol_service__demo 02_launch_arguments.launch.py --show-args
+ros2 launch patrol_service__demo 03_advanced.launch.py</code></pre></div>
+    <p>本项目在 ROS 2 Humble 环境中已经实际构建成功。基础启动已观察到服务端响应；进阶启动已验证命名空间、条件分支以及远程参数修改。</p>
+  </section>
+
+  <footer class="footer">ROS 2 Launch Lab · 单文件离线教程 · 使用页面顶部搜索快速定位概念 · 打印时会自动切换为简洁版式</footer>
+</main>
+</div>
+<script>
+  const root = document.documentElement;
+  const theme = document.getElementById('theme');
+  const savedTheme = localStorage.getItem('launch-theme');
+  if (savedTheme) root.dataset.theme = savedTheme;
+  const syncThemeIcon = () => theme.textContent = root.dataset.theme === 'dark' ? '☀︎' : '☾';
+  syncThemeIcon();
+  theme.addEventListener('click', () => {
+    root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('launch-theme', root.dataset.theme); syncThemeIcon();
+  });
+
+  document.querySelectorAll('.copy').forEach(button => button.addEventListener('click', async () => {
+    const text = button.closest('.codebox').querySelector('pre').innerText;
+    try { await navigator.clipboard.writeText(text); button.textContent = '已复制 ✓'; }
+    catch (_) { button.textContent = '请手动复制'; }
+    setTimeout(() => button.textContent = '复制', 1400);
+  }));
+
+  const updateProgress = () => {
+    const max = document.documentElement.scrollHeight - innerHeight;
+    document.getElementById('progress').style.width = (max > 0 ? scrollY / max * 100 : 0) + '%';
+  };
+  addEventListener('scroll', updateProgress, {passive:true}); updateProgress();
+
+  const links = [...document.querySelectorAll('aside a')];
+  const sections = links.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+  const observer = new IntersectionObserver(entries => entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      links.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + entry.target.id));
+    }
+  }), {rootMargin:'-15% 0px -72% 0px'});
+  sections.forEach(s => observer.observe(s));
+
+  document.getElementById('search').addEventListener('input', event => {
+    const q = event.target.value.trim().toLowerCase();
+    document.querySelectorAll('.searchable').forEach(section => {
+      section.classList.toggle('hide-by-search', q && !section.innerText.toLowerCase().includes(q));
+    });
+  });
+
+  document.querySelectorAll('[data-check]').forEach(box => {
+    box.checked = localStorage.getItem('launch-' + box.dataset.check) === '1';
+    box.addEventListener('change', () => localStorage.setItem('launch-' + box.dataset.check, box.checked ? '1' : '0'));
+  });
+
+  document.querySelectorAll('.quiz').forEach(quiz => quiz.querySelectorAll('button').forEach(button => {
+    button.addEventListener('click', () => {
+      const ok = button.dataset.v === quiz.dataset.answer;
+      quiz.querySelector('.quiz-result').textContent = ok ? '回答正确 ✓' : '还差一点。回看上面的概念与代码映射。';
+      quiz.querySelector('.quiz-result').style.color = ok ? 'var(--green)' : 'var(--orange)';
+    });
+  }));
+</script>
+</body>
+</html>

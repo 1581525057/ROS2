@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Patrol Server 第二次升级：增加 CancelResponse</title>
+  <style>
+    :root{--bg:#f4f1ea;--paper:#fffdf8;--ink:#18221e;--muted:#607069;--green:#176b52;--soft:#e4f1ea;--orange:#d87332;--line:#d9ddd6;--dark:#10251e;--radius:18px;--shadow:0 16px 42px rgba(25,48,38,.09)}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:var(--ink);background:radial-gradient(circle at 10% 4%,rgba(216,115,50,.1),transparent 24rem),var(--bg);font:16px/1.75 system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif}
+    a{color:inherit}a:focus-visible,button:focus-visible{outline:3px solid #ffb573;outline-offset:3px}.layout{display:grid;grid-template-columns:250px minmax(0,1fr);min-height:100vh}
+    aside{position:sticky;top:0;height:100vh;padding:28px 20px;color:#edf7f1;background:var(--dark)}aside small{color:#a7c8bb;letter-spacing:.12em}aside strong{display:block;margin:7px 0 24px;font-size:1.2rem;line-height:1.4}nav a{display:block;margin:5px 0;padding:9px 11px;border-radius:9px;color:#bfd3cb;text-decoration:none}nav a:hover,nav a.active{color:white;background:rgba(255,255,255,.1)}
+    main{width:min(100%,980px);margin:auto;padding:38px 46px 90px}section{scroll-margin-top:20px;margin-bottom:30px;padding:32px;background:rgba(255,253,248,.92);border:1px solid rgba(23,107,82,.11);border-radius:var(--radius);box-shadow:var(--shadow)}
+    .hero{min-height:480px;display:grid;align-content:center;padding:52px;color:white;background:linear-gradient(138deg,#10251e,#18523e)}.kicker{color:#ffc38f;font-weight:800;letter-spacing:.12em;font-size:.8rem}h1{margin:12px 0;font-size:clamp(2.5rem,6vw,4.7rem);line-height:1.06;letter-spacing:-.04em}h2{margin:0 0 10px;font-size:clamp(1.6rem,3vw,2.3rem);line-height:1.25}h3{margin:22px 0 7px}.lead{max-width:720px;color:#d3e4dd;font-size:1.1rem}.pill{display:inline-block;margin-bottom:10px;padding:4px 11px;border-radius:999px;color:var(--green);background:var(--soft);font-size:.82rem;font-weight:800}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.card{padding:19px;border:1px solid var(--line);border-radius:14px;background:var(--paper)}.card h3{margin-top:0}.muted{color:var(--muted)}
+    .codebox{margin:16px 0;overflow:hidden;border-radius:14px;background:#12201b}.codehead{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;color:#bcd0c7;background:#0b1713;font-size:.82rem}.copy{padding:5px 10px;border:1px solid #426254;border-radius:8px;color:white;background:transparent;cursor:pointer}pre{margin:0;padding:18px;overflow:auto;color:#eaf4ef;font:14px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}:not(pre)>code{padding:.12em .4em;border-radius:5px;color:#15513e;background:#e7eee9;font-size:.9em}.add{color:#8de0b8;font-weight:700}
+    .callout,.check,.warning{margin:16px 0;padding:15px 17px;border-radius:11px}.callout,.check{border-left:4px solid var(--green);background:var(--soft)}.warning{border-left:4px solid var(--orange);background:#fff0e4}
+    .flow{padding:20px;border:1px solid var(--line);border-radius:15px;background:#fbfaf5;overflow:auto}.flow svg{display:block;min-width:680px;width:100%;height:auto}table{width:100%;border-collapse:collapse;margin:14px 0}th,td{padding:11px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{color:var(--muted);font-size:.83rem}.back{position:fixed;right:20px;bottom:20px;display:grid;place-items:center;width:43px;height:43px;border-radius:50%;color:white;background:var(--orange);text-decoration:none;box-shadow:var(--shadow)}footer{text-align:center;color:var(--muted)}
+    @media(max-width:780px){.layout{display:block}aside{position:relative;height:auto}nav{display:grid;grid-template-columns:1fr 1fr}main{padding:20px 14px 70px}section,.hero{padding:24px 19px}.grid{grid-template-columns:1fr}}
+    @media print{aside,.copy,.back{display:none!important}.layout{display:block}main{width:auto;padding:0}section{box-shadow:none;break-inside:avoid}.hero{min-height:auto;color:black;background:white}.hero .lead{color:#333}pre{white-space:pre-wrap}}
+  </style>
+</head>
+<body id="top">
+  <div class="layout">
+    <aside>
+      <small>ROS 2 · Action</small>
+      <strong>Patrol Server<br>第二次小升级</strong>
+      <nav aria-label="课程目录">
+        <a href="#result">01 最终变化</a>
+        <a href="#before">02 原来的流程</a>
+        <a href="#step1">03 导入响应类型</a>
+        <a href="#step2">04 编写检查回调</a>
+        <a href="#step3">05 注册回调</a>
+        <a href="#flow">06 执行顺序</a>
+        <a href="#cancel">07 允许并处理取消</a>
+        <a href="#run">08 运行验证</a>
+        <a href="#summary">09 总结</a>
+      </nav>
+    </aside>
+    <main>
+      <section class="hero" id="result">
+        <div class="kicker">ONE CONCEPT · ONE SMALL STEP</div>
+        <h1>从“接不接”<br>升级到“停不停”</h1>
+        <p class="lead">保留第一版的 GoalResponse，再增加 CancelResponse。客户端按 Ctrl+C 会发送取消请求，服务端允许后安全结束正在执行的任务。</p>
+      </section>
+
+      <section>
+        <span class="pill">范围确认</span>
+        <h2>第二次升级的边界</h2>
+        <div class="grid">
+          <div class="card"><h3>新增能力</h3><p><code>cancel_callback</code> 决定是否允许取消；执行循环发现请求后调用 <code>canceled()</code>。</p></div>
+          <div class="card"><h3>客户端配合</h3><p>保存 GoalHandle，把客户端终端的 Ctrl+C 转换成 <code>cancel_goal_async()</code>。</p></div>
+        </div>
+      </section>
+
+      <section id="before">
+        <span class="pill">升级前</span>
+        <h2>原来：Goal 来了就直接执行</h2>
+        <p>原来的 <code>ActionServer</code> 只登记执行回调。无论地点是不是空字符串、步数是不是 0，服务端都没有一个专门的入口提前判断。</p>
+        <div class="codebox">
+          <div class="codehead"><span>原来的核心写法</span><button class="copy" type="button">复制</button></div>
+          <pre><code># chapt5_ws/src/patrol_action/patrol_action/patrol_server.py
+self.patrol_action_server = ActionServer(
+    self, Patrol, 'patrol', self.handle_patrol_action_server
+)</code></pre>
+        </div>
+        <div class="warning"><strong>为什么升级：</strong>如果 Goal 本身就不合法，最好在任务开始前拒绝，而不是进入执行回调后再处理。</div>
+      </section>
+
+      <section id="step1">
+        <span class="pill">第 1 小步</span>
+        <h2>导入 GoalResponse</h2>
+        <p>它是服务端给“是否接单”这个问题的标准答案类型。</p>
+        <div class="codebox">
+          <div class="codehead"><span>新增一行导入</span><button class="copy" type="button">复制</button></div>
+          <pre><code># chapt5_ws/src/patrol_action/patrol_action/patrol_server.py
+from rclpy.action import ActionServer
+<span class="add">from rclpy.action import GoalResponse</span></code></pre>
+        </div>
+        <table>
+          <thead><tr><th>返回值</th><th>意思</th><th>后续</th></tr></thead>
+          <tbody><tr><td><code>GoalResponse.ACCEPT</code></td><td>接受目标</td><td>继续进入执行回调</td></tr><tr><td><code>GoalResponse.REJECT</code></td><td>拒绝目标</td><td>任务不会开始</td></tr></tbody>
+        </table>
+      </section>
+
+      <section id="step2">
+        <span class="pill">第 2 小步</span>
+        <h2>写一个快速检查回调</h2>
+        <p><code>goal_request</code> 就是客户端发送的 <code>Patrol.Goal</code>。这里只检查，不执行巡逻。</p>
+        <div class="codebox">
+          <div class="codehead"><span>检查地点和步数</span><button class="copy" type="button">复制</button></div>
+          <pre><code># chapt5_ws/src/patrol_action/patrol_action/patrol_server.py
+<span class="add">def goal_callback(self, goal_request: Patrol.Goal) -&gt; GoalResponse:</span>
+<span class="add">    if not goal_request.target_name.strip():</span>
+<span class="add">        return GoalResponse.REJECT</span>
+
+<span class="add">    if not 1 &lt;= goal_request.total_steps &lt;= 100:</span>
+<span class="add">        return GoalResponse.REJECT</span>
+
+<span class="add">    return GoalResponse.ACCEPT</span></code></pre>
+        </div>
+        <div class="callout"><strong><code>strip()</code> 的作用：</strong>去掉字符串两边空格，所以 <code>"   "</code> 也会被当成空地点。</div>
+        <div class="check"><strong>检查规则：</strong>地点不能为空；步数只能是 1 到 100，包含 1 和 100。</div>
+      </section>
+
+      <section id="step3">
+        <span class="pill">第 3 小步</span>
+        <h2>把回调注册给 ActionServer</h2>
+        <p>只定义函数还不够。必须通过 <code>goal_callback=...</code> 告诉服务端，新 Goal 到达时要调用谁。</p>
+        <div class="codebox">
+          <div class="codehead"><span>唯一需要加入 ActionServer 的参数</span><button class="copy" type="button">复制</button></div>
+          <pre><code># chapt5_ws/src/patrol_action/patrol_action/patrol_server.py
+self.patrol_action_server = ActionServer(
+    self, Patrol, 'patrol', self.handle_patrol_action_server,
+<span class="add">    goal_callback=self.goal_callback</span>
+)</code></pre>
+        </div>
+        <div class="warning"><strong>最容易漏的地方：</strong>如果忘记注册，<code>goal_callback</code> 虽然写在文件里，却永远不会被调用。</div>
+      </section>
+
+      <section id="flow">
+        <span class="pill">执行顺序</span>
+        <h2>Goal 现在有两条路</h2>
+        <div class="flow" role="img" aria-label="客户端发送 Goal，goal_callback 检查后，合法目标进入执行回调，非法目标直接拒绝">
+          <svg viewBox="0 0 800 280" xmlns="http://www.w3.org/2000/svg">
+            <defs><marker id="a" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L0 6L9 3z" fill="#176b52"/></marker></defs>
+            <g font-family="system-ui,Microsoft YaHei" text-anchor="middle">
+              <rect x="25" y="101" width="145" height="70" rx="14" fill="#10251e"/><text x="97" y="130" fill="white" font-weight="700">Client</text><text x="97" y="154" fill="#bed5cc">发送 Goal</text>
+              <rect x="245" y="101" width="175" height="70" rx="14" fill="#e4f1ea" stroke="#176b52"/><text x="332" y="130" fill="#15513e" font-weight="700">goal_callback</text><text x="332" y="154" fill="#496a5e">先检查</text>
+              <rect x="515" y="35" width="220" height="70" rx="14" fill="#fff0e4" stroke="#d87332"/><text x="625" y="64" fill="#8a4215" font-weight="700">REJECT</text><text x="625" y="88" fill="#8a4215">不执行任务</text>
+              <rect x="515" y="175" width="220" height="70" rx="14" fill="#e4f1ea" stroke="#176b52"/><text x="625" y="204" fill="#15513e" font-weight="700">ACCEPT</text><text x="625" y="228" fill="#496a5e">进入原来的执行回调</text>
+              <path d="M170 136H238" stroke="#176b52" stroke-width="3" marker-end="url(#a)"/><path d="M420 122C463 118 471 74 508 71" fill="none" stroke="#176b52" stroke-width="3" marker-end="url(#a)"/><path d="M420 151C463 157 471 207 508 209" fill="none" stroke="#176b52" stroke-width="3" marker-end="url(#a)"/>
+              <text x="465" y="91" fill="#607069" font-size="13">不合法</text><text x="466" y="192" fill="#607069" font-size="13">合法</text>
+            </g>
+          </svg>
+        </div>
+        <div class="callout"><strong>一句话：</strong><code>goal_callback</code> 决定“执行回调有没有机会开始”。</div>
+      </section>
+
+      <section id="cancel">
+        <span class="pill">第二次升级</span>
+        <h2>CancelResponse：决定是否允许取消</h2>
+        <p>取消像执行中的“撤单申请”。客户端不能直接停止服务端，只能提出请求；服务端返回 <code>ACCEPT</code> 或 <code>REJECT</code>。</p>
+        <h3>第 1 步：注册取消回调</h3>
+        <div class="codebox">
+          <div class="codehead"><span>导入、注册、返回 ACCEPT</span><button class="copy" type="button">复制</button></div>
+          <pre><code># chapt5_ws/src/patrol_action/patrol_action/patrol_server.py
+<span class="add">from rclpy.action import ActionServer, CancelResponse</span>
+
+self.patrol_action_server = ActionServer(
+    self, Patrol, 'patrol', self.handle_patrol_action_server,
+    goal_callback=self.goal_callback,
+<span class="add">    cancel_callback=self.cancel_callback,</span>
+    callback_group=self.callback_group
+)
+
+<span class="add">def cancel_callback(self, goal_handle) -&gt; CancelResponse:</span>
+<span class="add">    self.get_logger().info('收到取消请求，允许取消任务')</span>
+<span class="add">    return CancelResponse.ACCEPT</span></code></pre>
+        </div>
+        <div class="warning"><strong>只返回 ACCEPT 还不够：</strong>它只表示“同意撤单”。执行循环还必须检查请求并真正停止。</div>
+
+        <h3>第 2 步：在循环的安全位置停止</h3>
+        <div class="codebox">
+          <div class="codehead"><span>每一步开始前检查取消</span><button class="copy" type="button">复制</button></div>
+          <pre><code># chapt5_ws/src/patrol_action/patrol_action/patrol_server.py
+for step in range(1, request.total_steps + 1):
+<span class="add">    if goal_handle.is_cancel_requested:</span>
+<span class="add">        goal_handle.canceled()</span>
+<span class="add">        result = Patrol.Result()</span>
+<span class="add">        result.success = False</span>
+<span class="add">        result.message = '巡逻任务已取消'</span>
+<span class="add">        return result</span>
+
+    # 原来的 Feedback 代码继续执行</code></pre>
+        </div>
+        <p><code>goal_handle.canceled()</code> 设置 Action 的最终状态；<code>result</code> 则携带你定义的业务数据。这两件事都要做。</p>
+
+        <h3>第 3 步：让执行与取消可以同时被处理</h3>
+        <div class="codebox">
+          <div class="codehead"><span>取消功能所需的并发支撑</span><button class="copy" type="button">复制</button></div>
+          <pre><code># chapt5_ws/src/patrol_action/patrol_action/patrol_server.py
+<span class="add">self.callback_group = ReentrantCallbackGroup()</span>
+<span class="add"># ActionServer 中加入 callback_group=self.callback_group</span>
+
+<span class="add">executor = MultiThreadedExecutor(num_threads=2)</span>
+<span class="add">executor.add_node(node)</span>
+<span class="add">executor.spin()</span></code></pre>
+        </div>
+        <div class="grid">
+          <div class="card"><h3>线程 1</h3><p>运行巡逻循环，持续发布 Feedback。</p></div>
+          <div class="card"><h3>线程 2</h3><p>及时处理客户端发来的取消请求。</p></div>
+        </div>
+        <div class="check"><strong>记忆：</strong><code>cancel_callback</code> 决定“让不让停”，<code>is_cancel_requested</code> 决定“什么时候安全停”。</div>
+
+        <h3>第 4 步：客户端把 Ctrl+C 变成取消请求</h3>
+        <div class="codebox">
+          <div class="codehead"><span>客户端保存 GoalHandle 并异步取消</span><button class="copy" type="button">复制</button></div>
+          <pre><code># chapt5_ws/src/patrol_action/patrol_action/patrol_client.py
+<span class="add">self.goal_handle = future.result()</span>
+
+<span class="add">def request_cancel(self):</span>
+<span class="add">    self.cancel_requested = True</span>
+
+<span class="add">def check_cancel_request(self):</span>
+<span class="add">    if self.cancel_requested and not self.cancel_sent:</span>
+<span class="add">        self.cancel_sent = True</span>
+<span class="add">        future = self.goal_handle.cancel_goal_async()</span>
+<span class="add">        future.add_done_callback(self.cancel_response)</span></code></pre>
+        </div>
+        <p>Python 的 SIGINT 回调只设置布尔标志，ROS 定时器再调用取消 API。这样不会在系统信号处理函数中直接操作 ROS 实体。</p>
+      </section>
+
+      <section id="run">
+        <span class="pill">运行验证</span>
+        <h2>先构建，再测试接受与拒绝</h2>
+        <div class="warning"><strong>先避免重复服务端：</strong>执行 <code>ros2 action info /patrol</code>。如果 <code>Action servers</code> 大于 1，请先在旧服务端终端按 Ctrl+C；否则会看到重复 Feedback 和“more than one action server”警告。</div>
+        <h3>终端 1：构建并启动服务端</h3>
+        <div class="codebox"><div class="codehead"><span>Shell 命令</span><button class="copy" type="button">复制</button></div><pre><code>cd /home/yezi/ROS2/chapt5/chapt5_ws
+source /opt/ros/$ROS_DISTRO/setup.bash
+colcon build --packages-select action_interfaces patrol_action
+source install/setup.bash
+ros2 run patrol_action patrol_server</code></pre></div>
+        <p class="muted"><code>$ROS_DISTRO</code> 会由系统替换成当前发行版，本机是 Humble。</p>
+
+        <h3>终端 2：发送合法 Goal</h3>
+        <div class="codebox"><div class="codehead"><span>应该 ACCEPT</span><button class="copy" type="button">复制</button></div><pre><code>source /opt/ros/$ROS_DISTRO/setup.bash
+source /home/yezi/ROS2/chapt5/chapt5_ws/install/setup.bash
+ros2 action send_goal /patrol action_interfaces/action/Patrol \
+  "{target_name: Moon, total_steps: 10}" --feedback</code></pre></div>
+        <div class="check">成功标准：Goal 被接受，并进入你原来的 <code>handle_patrol_action_server</code>。</div>
+
+        <h3>终端 2：发送非法 Goal</h3>
+        <div class="codebox"><div class="codehead"><span>应该 REJECT</span><button class="copy" type="button">复制</button></div><pre><code>ros2 action send_goal /patrol action_interfaces/action/Patrol \
+  "{target_name: Moon, total_steps: 0}" --feedback</code></pre></div>
+        <div class="check">成功标准：终端显示 Goal 被拒绝，不会进入执行回调，也不会产生 Feedback。</div>
+
+        <h3>终端 2：运行你的客户端，再按 Ctrl+C</h3>
+        <div class="codebox"><div class="codehead"><span>客户端会发送 50 步任务</span><button class="copy" type="button">复制</button></div><pre><code>source /opt/ros/$ROS_DISTRO/setup.bash
+source /home/yezi/ROS2/chapt5/chapt5_ws/install/setup.bash
+ros2 run patrol_action patrol_client</code></pre></div>
+        <p>看到几次 Feedback 后，在客户端终端按一次 <code>Ctrl+C</code>。自定义 SIGINT 处理会设置取消标志，定时器随后调用 <code>cancel_goal_async()</code>。</p>
+        <div class="check">成功标准：客户端依次显示“正在发送取消请求”“服务端接受了取消请求”“任务未成功：巡逻任务已取消”；服务端显示“收到取消请求，允许取消任务”。</div>
+
+        <h3>常用查看命令</h3>
+        <table><thead><tr><th>目的</th><th>命令</th></tr></thead><tbody><tr><td>查看接口三段</td><td><code>ros2 interface show action_interfaces/action/Patrol</code></td></tr><tr><td>查看 Action</td><td><code>ros2 action list -t</code></td></tr><tr><td>查看服务端信息</td><td><code>ros2 action info /patrol</code></td></tr><tr><td>查看可执行程序</td><td><code>ros2 pkg executables patrol_action</code></td></tr></tbody></table>
+      </section>
+
+      <section id="summary">
+        <span class="pill">总结</span>
+        <h2>现在掌握了 Action 的两个决定</h2>
+        <ol>
+          <li><code>GoalResponse</code>：任务开始前，决定接不接。</li>
+          <li><code>CancelResponse</code>：任务执行中，决定是否允许取消。</li>
+          <li><code>goal_handle.canceled()</code>：确认任务已经安全停止。</li>
+        </ol>
+        <div class="callout"><strong>仍然没有改：</strong>Patrol.action 接口、客户端参数和 action_msgs 依赖。</div>
+        <p><strong>小练习：</strong>把 <code>cancel_callback</code> 临时改成 <code>CancelResponse.REJECT</code>，重新构建后再按 Ctrl+C，观察取消请求被拒绝。</p>
+      </section>
+      <footer>离线单文件教程 · Patrol Action · GoalResponse + CancelResponse</footer>
+    </main>
+  </div>
+  <a class="back" href="#top" aria-label="返回顶部">↑</a>
+  <script>
+    document.querySelectorAll('.copy').forEach((button)=>button.addEventListener('click',async()=>{const code=button.closest('.codebox').querySelector('code').innerText;try{await navigator.clipboard.writeText(code);const old=button.textContent;button.textContent='已复制';setTimeout(()=>button.textContent=old,1200)}catch(_){button.textContent='请手动复制'}}));
+    const links=[...document.querySelectorAll('nav a')];const sections=links.map(a=>document.querySelector(a.getAttribute('href'))).filter(Boolean);const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting)links.forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+entry.target.id))}),{rootMargin:'-20% 0px -65% 0px'});sections.forEach(section=>observer.observe(section));
+  </script>
+</body>
+</html>
