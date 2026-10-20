@@ -1,0 +1,6 @@
+std_msgs/Header header
+string joint_name
+float64 motor_encoder_rad
+float64 output_encoder_rad
+float64 zero_offset_rad
+float64 calibrated_angle_rad

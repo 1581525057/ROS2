@@ -1,0 +1,1 @@
+ament_cmake_symlink_install_targets("TARGET_FILES" "/home/yezi/ROS2/Robocup/ball_tracking_ws/build/hipnuc_imu/serial_node" "/home/yezi/ROS2/Robocup/ball_tracking_ws/build/hipnuc_imu/can_node" "TARGETS" "serial_node" "can_node" "DESTINATION" "lib/hipnuc_imu")

@@ -1,0 +1,2 @@
+/usr/bin/ar qc libhipnuc_json.a CMakeFiles/hipnuc_json.dir/hipnuc_json.c.o
+/usr/bin/ranlib libhipnuc_json.a

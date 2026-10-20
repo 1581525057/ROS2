@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>ball_lora_dashboard</name>
+  <version>0.1.0</version>
+  <description>C++ Qt dashboard for MCU telemetry and ball selection over LoRa.</description>
+  <maintainer email="yezi@example.com">yezi</maintainer>
+  <license>MIT</license>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <build_depend>qtbase5-dev</build_depend>
+  <build_depend>libzip-dev</build_depend>
+  <exec_depend>libqt5widgets5</exec_depend>
+  <exec_depend>libqt5concurrent5</exec_depend>
+  <exec_depend>libzip4</exec_depend>
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

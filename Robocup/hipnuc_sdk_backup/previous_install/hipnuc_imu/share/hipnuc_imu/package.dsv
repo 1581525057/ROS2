@@ -1,0 +1,8 @@
+source;share/hipnuc_imu/hook/cmake_prefix_path.ps1
+source;share/hipnuc_imu/hook/cmake_prefix_path.dsv
+source;share/hipnuc_imu/hook/cmake_prefix_path.sh
+source;share/hipnuc_imu/local_setup.bash
+source;share/hipnuc_imu/local_setup.dsv
+source;share/hipnuc_imu/local_setup.ps1
+source;share/hipnuc_imu/local_setup.sh
+source;share/hipnuc_imu/local_setup.zsh

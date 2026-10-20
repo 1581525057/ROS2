@@ -1,0 +1,1 @@
+/home/yezi/ROS2/Robocup/ball_tracking_ws/build/hipnuc_msgs/rosidl_typesupport_introspection_c/hipnuc_msgs/msg/rosidl_typesupport_introspection_c__visibility_control.h

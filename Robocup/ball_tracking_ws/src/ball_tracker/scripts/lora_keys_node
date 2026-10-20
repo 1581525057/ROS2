@@ -1,0 +1,2 @@
+#!/bin/sh
+exec /home/yezi/miniconda3/envs/cv/bin/python -m ball_tracker.lora_keys_node "$@"

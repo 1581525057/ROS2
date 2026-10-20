@@ -1,0 +1,7 @@
+string joint_name
+bool use_current_position
+float64 raw_zero_position
+---
+bool success
+string message
+float64 zero_offset

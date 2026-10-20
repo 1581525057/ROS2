@@ -1,0 +1,14 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : [],
+		"files" : [],
+		"nodes" : []
+	},
+	"installers" : [],
+	"paths" : 
+	{
+		"build" : "hipnuc_msgs__rs",
+		"source" : "/home/yezi/ROS2/Robocup/ball_tracking_ws/build/hipnuc_msgs/hipnuc_msgs__rs"
+	}
+}

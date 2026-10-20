@@ -1,0 +1,247 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from hipnuc_msgs/msg/HipnucImu.msg
+// generated code does not contain a copyright notice
+
+#include "std_msgs/msg/Header.idl"
+
+module hipnuc_msgs {
+  module msg {
+    typedef float float__3[3];
+    typedef float float__4[4];
+    typedef float float__2[2];
+    module HipnucImu_Constants {
+      const uint64 VALID_STATUS = 1;
+      const uint64 VALID_INS_STATUS = 2;
+      const uint64 VALID_ACC = 4;
+      const uint64 VALID_GYR = 8;
+      const uint64 VALID_MAG = 16;
+      const uint64 VALID_ROLL_PITCH = 32;
+      const uint64 VALID_HEADING = 64;
+      const uint64 VALID_QUAT = 128;
+      const uint64 VALID_DEVICE_TIME = 256;
+      const uint64 VALID_UTC = 512;
+      const uint64 VALID_GPS_TIME = 1024;
+      const uint64 VALID_PRESSURE = 2048;
+      const uint64 VALID_TEMPERATURE = 4096;
+      const uint64 VALID_INCLINATION = 8192;
+      const uint64 VALID_HEAVE = 16384;
+      const uint64 VALID_POSITION = 32768;
+      const uint64 VALID_VELOCITY_ENU = 65536;
+      const uint64 VALID_ACC_ENU = 131072;
+      const uint64 VALID_POSITION_QUALITY = 262144;
+      const uint64 VALID_PDOP = 524288;
+      const uint64 VALID_DIFF_AGE = 1048576;
+      const uint64 VALID_UNDULATION = 2097152;
+      const uint64 VALID_ODOMETER = 4194304;
+      const uint64 VALID_GNSS_POSITION = 8388608;
+      const uint64 VALID_GNSS_VELOCITY = 16777216;
+      const uint64 VALID_SOG = 33554432;
+      const uint64 VALID_NODE_ID = 67108864;
+      const uint64 VALID_YAW = 134217728;
+      const uint64 VALID_ALTITUDE = 268435456;
+      const uint64 VALID_HEADING_QUALITY = 536870912;
+      const uint64 VALID_POSITION_SATELLITES = 1073741824;
+      const uint64 VALID_HEADING_SATELLITES = 2147483648;
+      const uint64 VALID_HDOP = 4294967296;
+      const uint64 VALID_HEAVE_FREQUENCY = 8589934592;
+      const uint64 VALID_GNSS_ALTITUDE = 17179869184;
+      const uint64 VALID_COG = 34359738368;
+      const uint64 VALID_NMEA_STATUS = 68719476736;
+      const uint64 VALID_NMEA_MODE = 137438953472;
+      const uint64 VALID_UTC_TIME_OF_DAY = 274877906944;
+      const uint64 VALID_INCLINATION_YAW = 549755813888;
+    };
+    @verbatim (language="comment", text=
+      "One decoded HiPNUC measurement in SI units. `valid` is the bit mask from" "\n"
+      "hipnuc_sample.h (HIPNUC_VALID_*): read a field only when its bit is set." "\n"
+      "Bits indicate field presence, not solution convergence or a valid GNSS fix." "\n"
+      "Fields without a set bit are placeholders. INS and GNSS origins may differ.")
+    struct HipnucImu {
+      @verbatim (language="comment", text=
+        "host ROS time after decoding, before publishing; body-axis frame_id")
+      std_msgs::msg::Header header;
+
+      @verbatim (language="comment", text=
+        "1 HI91, 2 HI81, 3 HI83, 4 GGA, 5 RMC, 6 J1939, 7 CANFD83")
+      uint8 source;
+
+      uint64 valid;
+
+      @verbatim (language="comment", text=
+        "CAN source address or HI83 node id")
+      uint8 node_id;
+
+      @verbatim (language="comment", text=
+        "raw status bits (a set WB_CONV/ATT_CONV bit means NOT converged)")
+      uint16 main_status;
+
+      boolean gyro_bias_converged;
+
+      boolean attitude_converged;
+
+      boolean magnetic_disturbance;
+
+      boolean device_static;
+
+      boolean magnetometer_aiding;
+
+      @verbatim (language="comment", text=
+        "0 invalid, 1 aligning, 3 navigating, 6 dead reckoning")
+      uint8 ins_status;
+
+      @verbatim (language="comment", text=
+        "m/s^2, body axes, specific force")
+      float__3 acceleration;
+
+      @verbatim (language="comment", text=
+        "rad/s, body axes")
+      float__3 angular_velocity;
+
+      @verbatim (language="comment", text=
+        "T")
+      float__3 magnetic_field;
+
+      @verbatim (language="comment", text=
+        "rad, device Euler convention")
+      float roll;
+
+      float pitch;
+
+      float yaw;
+
+      @verbatim (language="comment", text=
+        "rad, clockwise from north (INS / J1939)")
+      float heading;
+
+      @verbatim (language="comment", text=
+        "body to navigation")
+      float__4 quaternion_wxyz;
+
+      @verbatim (language="comment", text=
+        "rad")
+      float__2 inclination;
+
+      @verbatim (language="comment", text=
+        "rad, HI83 inclinometer yaw, VALID_INCLINATION_YAW")
+      float inclination_yaw;
+
+      @verbatim (language="comment", text=
+        "HI91: 32-bit ms count, wraps (UTC time of day once synchronized)")
+      uint64 device_time_us;
+
+      @verbatim (language="comment", text=
+        "VALID_UTC, date and time; VALID_UTC_TIME_OF_DAY alone leaves the date zero")
+      boolean utc_valid;
+
+      uint16 utc_year;
+
+      uint8 utc_month;
+
+      uint8 utc_day;
+
+      uint8 utc_hour;
+
+      uint8 utc_minute;
+
+      uint8 utc_second;
+
+      uint16 utc_millisecond;
+
+      uint16 gps_week;
+
+      uint32 gps_tow_ms;
+
+      @verbatim (language="comment", text=
+        "degC")
+      float temperature;
+
+      @verbatim (language="comment", text=
+        "Pa; raw product field, validity/freshness not guaranteed")
+      float pressure;
+
+      @verbatim (language="comment", text=
+        "m, VALID_HEAVE")
+      float__3 heave_surge_sway;
+
+      @verbatim (language="comment", text=
+        "Hz, VALID_HEAVE_FREQUENCY")
+      float__3 heave_surge_sway_frequency;
+
+      @verbatim (language="comment", text=
+        "INS origin, deg WGS84, VALID_POSITION")
+      double longitude;
+
+      double latitude;
+
+      @verbatim (language="comment", text=
+        "INS origin, m MSL, VALID_ALTITUDE")
+      double altitude_msl;
+
+      @verbatim (language="comment", text=
+        "GNSS antenna, deg WGS84, VALID_GNSS_POSITION")
+      double gnss_longitude;
+
+      double gnss_latitude;
+
+      @verbatim (language="comment", text=
+        "GNSS antenna, m MSL, VALID_GNSS_ALTITUDE")
+      double gnss_altitude_msl;
+
+      @verbatim (language="comment", text=
+        "m/s, VALID_GNSS_VELOCITY")
+      float__3 gnss_velocity_enu;
+
+      @verbatim (language="comment", text=
+        "GNSS geoid separation, m")
+      float geoid_separation;
+
+      @verbatim (language="comment", text=
+        "m/s")
+      float__3 velocity_enu;
+
+      @verbatim (language="comment", text=
+        "m/s^2")
+      float__3 acceleration_enu;
+
+      @verbatim (language="comment", text=
+        "GGA quality: 0 none, 1 GNSS, 2 DGNSS, 4 RTK fixed, 5 RTK float")
+      uint8 position_quality;
+
+      uint8 position_satellites;
+
+      @verbatim (language="comment", text=
+        "4 = fixed; only then is a dual-antenna heading valid")
+      uint8 heading_quality;
+
+      uint8 heading_satellites;
+
+      float pdop;
+
+      float hdop;
+
+      @verbatim (language="comment", text=
+        "s")
+      float differential_age;
+
+      @verbatim (language="comment", text=
+        "m/s")
+      float odometer_speed;
+
+      @verbatim (language="comment", text=
+        "m/s, VALID_SOG")
+      float speed_over_ground;
+
+      @verbatim (language="comment", text=
+        "rad clockwise from north, VALID_COG")
+      float course_over_ground;
+
+      @verbatim (language="comment", text=
+        "ASCII A/V, VALID_NMEA_STATUS")
+      uint8 nmea_status;
+
+      @verbatim (language="comment", text=
+        "raw ASCII RMC mode, VALID_NMEA_MODE")
+      uint8 nmea_mode;
+    };
+  };
+};

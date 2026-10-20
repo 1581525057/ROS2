@@ -1,0 +1,1 @@
+/home/yezi/ROS2/Robocup/ball_tracking_ws/build/hipnuc_msgs/rosidl_generator_cpp/hipnuc_msgs/msg/rosidl_generator_cpp__visibility_control.hpp

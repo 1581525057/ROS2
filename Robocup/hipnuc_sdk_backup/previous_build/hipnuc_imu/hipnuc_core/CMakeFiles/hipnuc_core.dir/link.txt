@@ -1,0 +1,2 @@
+/usr/bin/ar qc libhipnuc_core.a CMakeFiles/hipnuc_core.dir/hipnuc_dec.c.o CMakeFiles/hipnuc_core.dir/nmea_dec.c.o
+/usr/bin/ranlib libhipnuc_core.a

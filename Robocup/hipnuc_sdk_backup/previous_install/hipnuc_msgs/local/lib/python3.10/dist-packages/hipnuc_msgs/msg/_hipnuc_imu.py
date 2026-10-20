@@ -1,0 +1,1 @@
+/home/yezi/ROS2/Robocup/ball_tracking_ws/build/hipnuc_msgs/rosidl_generator_py/hipnuc_msgs/msg/_hipnuc_imu.py

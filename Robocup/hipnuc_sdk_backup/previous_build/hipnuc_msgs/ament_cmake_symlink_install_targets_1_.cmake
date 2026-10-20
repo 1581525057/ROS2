@@ -1,0 +1,1 @@
+ament_cmake_symlink_install_targets("TARGET_FILES" "/home/yezi/ROS2/Robocup/ball_tracking_ws/build/hipnuc_msgs/rosidl_generator_py/hipnuc_msgs/hipnuc_msgs_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so" "TARGETS" "hipnuc_msgs__rosidl_typesupport_introspection_c__pyext" "DESTINATION" "local/lib/python3.10/dist-packages/hipnuc_msgs")

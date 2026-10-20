@@ -1,0 +1,2 @@
+/usr/bin/ar qc libhipnuc_j1939.a CMakeFiles/hipnuc_j1939.dir/hipnuc_j1939.c.o
+/usr/bin/ranlib libhipnuc_j1939.a

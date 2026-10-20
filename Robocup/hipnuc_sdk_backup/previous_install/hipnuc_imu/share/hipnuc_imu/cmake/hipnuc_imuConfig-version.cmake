@@ -1,0 +1,1 @@
+/home/yezi/ROS2/Robocup/ball_tracking_ws/build/hipnuc_imu/ament_cmake_core/hipnuc_imuConfig-version.cmake

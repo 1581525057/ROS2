@@ -1,0 +1,12 @@
+# Goal
+uint32 order_id
+string[] dishes
+---
+# Result
+bool success
+string message
+---
+# Feedback
+string current_dish
+uint32 finished_count
+uint32 total_count

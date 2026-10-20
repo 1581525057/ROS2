@@ -1,0 +1,2 @@
+/usr/bin/ar qc libhipnuc_sample.a CMakeFiles/hipnuc_sample.dir/hipnuc_sample.c.o
+/usr/bin/ranlib libhipnuc_sample.a

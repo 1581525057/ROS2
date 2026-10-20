@@ -1,0 +1,193 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1,
+						2
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-c894cf9b3b746b04564e.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.12"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						2,
+						7,
+						8
+					]
+				},
+				{
+					"build" : "hipnuc_core",
+					"jsonFile" : "directory-hipnuc_core-12f5b9725bb0fa2bd978.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.10"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 1,
+					"source" : "/home/yezi/ROS2/Robocup/ball_tracking_ws/src/hipnuc_sdk/c/hipnuc",
+					"targetIndexes" : 
+					[
+						1,
+						3,
+						4,
+						5
+					]
+				},
+				{
+					"build" : "hipnuc_serial",
+					"jsonFile" : "directory-hipnuc_serial-7c85adf227376737c255.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.16"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 2,
+					"source" : "/home/yezi/ROS2/Robocup/ball_tracking_ws/src/hipnuc_sdk/c/serial",
+					"targetIndexes" : 
+					[
+						6
+					]
+				}
+			],
+			"name" : "",
+			"projects" : 
+			[
+				{
+					"childIndexes" : 
+					[
+						1,
+						2
+					],
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "hipnuc_imu",
+					"targetIndexes" : 
+					[
+						0,
+						2,
+						7,
+						8
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						1
+					],
+					"name" : "hipnuc_core",
+					"parentIndex" : 0,
+					"targetIndexes" : 
+					[
+						1,
+						3,
+						4,
+						5
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						2
+					],
+					"name" : "hipnuc_serial",
+					"parentIndex" : 0,
+					"targetIndexes" : 
+					[
+						6
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "can_node::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-can_node-36f5ade51251a798cae1.json",
+					"name" : "can_node",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "hipnuc_core::@79c748438488ce3fb781",
+					"jsonFile" : "target-hipnuc_core-97de0e1708ef61a77cbd.json",
+					"name" : "hipnuc_core",
+					"projectIndex" : 1
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "hipnuc_imu_uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-hipnuc_imu_uninstall-83563eb94d489bad4744.json",
+					"name" : "hipnuc_imu_uninstall",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "hipnuc_j1939::@79c748438488ce3fb781",
+					"jsonFile" : "target-hipnuc_j1939-40b958b37ff28db9e07c.json",
+					"name" : "hipnuc_j1939",
+					"projectIndex" : 1
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "hipnuc_json::@79c748438488ce3fb781",
+					"jsonFile" : "target-hipnuc_json-9d3c6dc007b03c4e2578.json",
+					"name" : "hipnuc_json",
+					"projectIndex" : 1
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "hipnuc_sample::@79c748438488ce3fb781",
+					"jsonFile" : "target-hipnuc_sample-acbfbe3f0ca53a14874f.json",
+					"name" : "hipnuc_sample",
+					"projectIndex" : 1
+				},
+				{
+					"directoryIndex" : 2,
+					"id" : "hipnuc_serial::@92a0a18d10ea9c1b026c",
+					"jsonFile" : "target-hipnuc_serial-0fced5aad49bac1d35e5.json",
+					"name" : "hipnuc_serial",
+					"projectIndex" : 2
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "serial_node::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-serial_node-7ed6e63df8eeafd76df6.json",
+					"name" : "serial_node",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-uninstall-f1e5304782d7b0511a0e.json",
+					"name" : "uninstall",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/home/yezi/ROS2/Robocup/ball_tracking_ws/build/hipnuc_imu",
+		"source" : "/home/yezi/ROS2/Robocup/ball_tracking_ws/src/hipnuc_sdk/ros/ros2/hipnuc_imu"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 3
+	}
+}

@@ -1,0 +1,14 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : [],
+		"files" : [],
+		"nodes" : []
+	},
+	"installers" : [],
+	"paths" : 
+	{
+		"build" : "hipnuc_core",
+		"source" : "/home/yezi/ROS2/Robocup/ball_tracking_ws/src/hipnuc_sdk/c/hipnuc"
+	}
+}

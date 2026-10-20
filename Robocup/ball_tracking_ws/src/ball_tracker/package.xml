@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>ball_tracker</name>
+  <version>0.1.0</version>
+  <description>YOLO ball detection and target information for a following robot.</description>
+  <maintainer email="yezi@example.com">yezi</maintainer>
+  <license>MIT</license>
+  <buildtool_depend>ament_python</buildtool_depend>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>python3-serial</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>ros2launch</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>ball_tracker_interfaces</exec_depend>
+  <exec_depend>fdilink_ahrs</exec_depend>
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

@@ -1,0 +1,2 @@
+/usr/bin/ar qc libhipnuc_serial.a CMakeFiles/hipnuc_serial.dir/hipnuc_serial.c.o CMakeFiles/hipnuc_serial.dir/serial_io.c.o
+/usr/bin/ranlib libhipnuc_serial.a
